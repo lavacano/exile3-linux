@@ -1,0 +1,5 @@
+#!/bin/bash
+cd /home/lavac/exile3-linux-1 || exit 1
+export EXILE_PATH=/home/lavac/exile3-linux-1
+export LD_LIBRARY_PATH=/home/lavac/exile3-linux-1:$LD_LIBRARY_PATH
+exec padsp ./exile3ed-binary "$@" >/dev/null 2>&1

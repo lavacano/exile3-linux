@@ -1,0 +1,1097 @@
+<HTML>
+<HEAD>
+<TITLE>Exile III: Ruined World Instructions</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<h2>Exile III: Ruined World Instructions</h2>
+<h4>Copyright 1997, 1998, 1999, 2000, Spiderweb Software, Inc. and
+Boutell.Com, Inc.</h4>
+This is full documentation for Exile III: Ruined World and the
+Exile III character editor. Exile III is shareware - the first third 
+of the game is free,and the the second two thirds can be played after you 
+register. See <a href="#register">How to Register</a> for details.
+Also see the <a href="orderform.htm">order form</a>.
+
+<P>If you're having any trouble getting Exile III to run correctly,
+be sure to look in the <a href="#troubleshooting">troubleshooting</a> 
+section. If you are unable to get started, or you need a hint to a 
+puzzle early on, look in the <a href="#tips">Tips For Beginners</a>
+section.
+
+<h4>Table of Contents:</h4>
+<P>Section 1: <a href="#about">About Exile III</a>
+<P>Section 2: <a href="#tips">Playing Tips For Beginners/Mini Hint Booklet</A>
+<P>Section 3: <a href="#started">Getting Started</A>
+<P>Section 4: <a href="#screen">The Exile Screen</A>
+<P>Section 5: <a href="#menu">The Exile Menu</A>
+<P>Section 6: <a href="#town">Getting Around Town</A>
+<P>Section 7: <a href="#outdoors">Getting Around the Outdoors</A>
+<P>Section 8: <a href="#killing">Killing Stuff</A>
+<P>Section 9: <a href="#misc">Miscellaneous</A>
+<P>Section 10: <a href="#mage">Mage Spells</A>
+<P>Section 11: <a href="#priest">Priest Spells</A>
+<P>Section 12: <a href="#editor">The Exile III Editor</A>
+<P>Section 13: <a href="#credits">Credits</A>
+<p>Appendix A: <a href="#troubleshooting">Troubleshooting Tips</a>
+<p>Appendix B: <a href="#register">How To Register</a>
+<p>Appendix C: <a href="orderform.htm">Order Form</a>
+<p>Appendix D: <a href="#twin">TWIN GNU Library Public License Information</a>
+
+<h4>Technical support:</h4>
+Should you have any questions, problems or comments, contact:
+<blockquote>
+<P>Spiderweb Software, Inc.
+<P>PO Box 85659
+<P>Seattle, WA 98145-1659
+<P>(206) 789-4438
+<P>Internet: SpidWeb@spiderwebsoftware.com
+<P>America Online: SpidWeb
+<P>WWW: http://www.spiderwebsoftware.com
+</blockquote>
+
+<h4><a name="register">How to Register Exile III</a></h4>
+<P>Exile III is being marketed under the shareware concept. You canplay the first half of the game at full functionality for free. To play the second half, you need to obtain a key (i.e. password) from Spiderweb Software.
+
+<P>PRICING:
+<P>Exile 3 is $25, the Exile 3 Editor is $9, the hint book is $8,and the Exile III Bundle (all 3) is $35.
+
+<P>You can register by credit card or by sending a check or money order.
+
+<P>ORDERING BY PHONE: We accept VISA, MasterCard, and American Express. Call us at(206)789-4438. Our hours are M-F, 10-6 Pacific time.
+
+<P> ORDERING ONLINE: We have a secure registration form on our web site: <a href="http://www.spiderwebsoftware.com/">http://www.spiderwebsoftware.com</a>. <P>
+
+<P>ORDERING : E-mail us at <a href="mailto:spidweb@spidweb.com">SpidWeb@spidweb.com</a>. Include your name,address, phone number, registration codes (get them by clicking Shareware Info on the title screen), credit card number, and expiration date.
+
+<P>BY CHECK OR MONEY ORDER:
+<P>Foreign orders are welcome. Pay with a postal money order in US currency, or a check or money order in US currency, DRAWN ON A U.S. BANK. No EuroCheques, please. To print the order form, examine the <a href="orderform.htm">Order Form</a> and select Print from the File menu. Pay with a check or money order (payable to Spiderweb Software).
+
+<P>HOWEVER YOU REGISTER, DON'T FORGET YOUR REGISTRATION CODES. WE CANNOT REGISTER YOUR COPY WITHOUT THEM! To get these codes, click on Shareware Info on the title screen.
+
+<P>You should get your registration codes in the mail within 4-5 business days, and we E-mail registration keys within 1 business day of receiving your order. If you include an E-mail address, your codes will be E-mailed to you as well.
+
+<h4><a href="orderform.html">Click here to see the order form.</a></h4>
+<h4><a name="troubleshooting">Troubleshooting</a></h4>
+<P>If Exile III is not working right, read this section. One of the tips below may help.
+
+<P>Question:  Exile III crashes sometimes for no reason!
+<P>Answer: Several steps to try, which will eliminate most problems.
+<P>1. Select Preferences from the Options menu. Select Fewer Sounds. If
+<P>this doesn't help, turn off sounds. This will fix most problems.
+<P>2. Run Exile III with no other programs running.
+<P>3. Make sure you have 4 megabytes of free RAM.
+
+<P>Question:  I get crashes when targeting a spell or missile, and nothing helps!
+<P>Answer: Select Preferences from the Options menu. Select No Targeting Line.
+
+<P>Question:  The Exile III screen is really tiny!
+<P>Answer: run the fullscreen version (exile3-fullscreen), <b>or</b> try pressing CONTROL-ALT-+. NOTE: you must use the
++ key on your numeric keypad. This combination should cause your
+Linux XFree86 server to cycle to the next available screen resolution.
+If you have not configured your X server to support 800x600 or 640x480
+resolution, try adding those modes to your X server configuration.
+800x600 is roughly ideal for Linux Exile III play.
+
+<P>Question:  OK. I installed the game. It runs fine. It looks fine. But I keep starving, if the monsters don't kill me first, and I don't have any gold!
+<P>Answer:  Read the Playing Tips For Beginners section near the end of the manual.
+
+<P>Question: How can I see a character's statistics when I'm not in the training window?
+<P>Answer: Click on the question mark to the right of the character's name.
+
+<P>Question: Sometimes the colors in Exile seem bizarre.
+<P>Answer: One of the other programs you're running is messing with Exile
+<P>III's color management. Under Linux, the best solution is to launch your
+X server in a 16-bit color mode, rather than 8 bits. The command
+"startx -bpp 16" does this. If you are using a display manager such as
+gdm (for Gnome) or xdm (typically used with KDE and other window managers),
+you will need to make this change in your display manager's configuration
+files.
+<p>If you must run Exile III in an 8-bit color mode, be aware that there
+will be some amount of color "flashing" when switching applications.
+This is because many applications wish to have access to the limited
+pool of colors.
+<h3><a name="about">Section 1: About Exile III: Ruined World</a></h3>
+<P>1.1 - About this copy:
+
+<P>This is Exile III: Ruined World, a huge, highly-detailed Shareware fantasy role-playing game for Macintosh and PC Windows. It is one of the most sophisticated and elaborate games of its kind, featuring a detailed plot with 200,000 words of story, many towns, dungeons and quests, and a truly elegant and carefully designed user interface. Exile III promises manyhours of fun, excitement, and confusion.
+
+<P>1.2 - Comments and Bugs:
+
+<P>Any comments and bug reports may be made to the address above. Please do so. We love to hear from you, and any comments can serve to make
+this game (and possible sequels) better.
+
+<P>1.3 - System Requirements:
+
+<P>Exile III for Linux requires an x86-based Linux system GLIBC 2.1 or higher and the X Window System installed and working properly. SUSE Linux 6.3 and up and Red Hat Linux 6.0 and up both meet this standard. Other Linux systems may also be able to run Exile, but <strong>you must have GLIBC 2.1.</strong>
+<h3><a name="tips">Section 2: PlayingTips for Beginners/Mini hint booklet</a></h3>
+<P>Exile III: Ruined World (Exile III for short) is a computer fantasy role-playing game. If you've never played a game of this sort before, much of what's going on will be very unfamiliar to you. This section provides an overview of how to do the most important things, so you don't get too swamped with the details. Don't worry - even though Exile III is complicated, once you can get around you will be able to pick up other things very easily. Also, don't worry if you've never played Exile I or II. Experience with those games is not necessary to enjoy Exile III.
+
+<P><B>Starting the game - </B>In Exile III, you will control a group (or "party") of six adventurers (often referred to as PCs, for "player characters"). You will take these six people on adventurers, kill monsters, collect loot, and try to save the world. Each person has his or her own skills, abilities, and items.
+<P>To start the game, you need to get a group of six people. From the starting screen, press Create New Party, and watch the introduction. When you hit the button, you will be at the party creation screen.
+<P>Notice you have already been given six characters. You can now,if you wish, drop, recreate, or edit these PCs. For now, don't worry about this. Just hit "Done" to start the game.
+
+<P><B>What's going on? -</B> You start in Fort Emergence, a hidden fortress just below the surface of the world. You are Exiles, members of a nation of people who live in caverns far under the Earth, having been banished there by the Empire. The Empire is the only nation on the surface, and recently fought a bloody war with Exile.
+<P>The Exiles want to return to the surface, but nothing is known about conditions outside, and fear of the Empire is great. Your job will be to go out, look around, and, in the long run, find a way for the Exiles to return to the surface.
+<P>But for now, it is enough of a problem just to get equipped and figure out how to move around in this odd new world.
+
+<P><B>Moving around and getting stuff - </B> Once you've started the game, you will be in your room in Fort Emergence. You can see yourself in the window in the upper left corner of the screen (the terrain screen). You can move around by pressing the buttons on the keypad, or by moving the mouse cursor into the terrain screen and pressing the mouse button. Move around a bit.
+<P>Your characters will start with weapons and armor already equipped (i.e. worn). However, there are more things to be gotten. For example, you'll want to look at that scroll on the table. Click on the button with the hand on it in the lower left corner (or type 'g', for Get). The getting things window will come up. Click on the scroll, and your first character will have it.
+<P>You should now see the scroll in the item window at the right side of the screen. To the right of it will be four buttons: 'U' (for Use), 'G' (for Give), 'D' (for Drop), and 'I' (for Item Info). Click on the 'U' button, and you'll read the scroll and get directions for where to go. That was interesting.
+<P>Now move next to one of the dressers. Click on the 'D' button by the scroll, to drop it. You'll need to click where to drop the item. Click on the dresser.
+<P>It's gone! You just put the scroll in the dresser. Maybe, in addition to the scroll, there's something else in the dresser. You should search it.
+<P>To search something, look at it while standing next to it. Stand right under the dresser. Press the Eye button (or type 'l'), and click on the dresser (or press the '8' on the keypad, for 'up'). You search the dresser, and will see a list of everything inside. Get everything, then search the other dresser.
+<P>Many things, such as barrels, crates, dressers and chests can be searched for interesting things. If you think something useful is hidden somewhere, be sure to search. Every sort of terrain can have something hidden in it.
+<P>The map told you about a storeroom with supplies for you. It's a small room located in the middle of the fort. Find your way there and get all the armor and weapons ... you'll need them.
+
+<P><B>Readying armor and weapons - </B>Now that you have some armor and weapons. It's time to put on your new gear. The PC screen, listing your party, is to the upper right. One of your character's names will be in italics. This is the active character. This character's inventory is given in the item screen below it. Click on another PC's name. It will become the active character, and that PC's inventory will appear below. You can also type the PC's number to make him/her active, a very useful shortcut.
+<P>Go to one of your PCs inventory pages. Click on the name of, say, a suit of armor. The name of that item will now appear in italics. That means you're wearing it! Click it again to take it off.
+<P>Suppose one PC has two suits of armor, and you want another PC to be protected. Go to the page of the PC with two suits of armor, and hit the "G" button by one of them. This gives the item away. A window will come up asking who to give the item to. Click the button by the name of the PC to give the item to.
+<P>Shift your new stuff around so that your fighters have the best armor and weapons. There! You"re equipped. Now, you can start meeting the people in the fort around you, or go out and kill something.
+
+<P><B>Talking to people -</B> To get anywhere in Exile III, you'll need to talk to many, many people. Might as well try this now. Hit 't' and then click on a person to talk to him/her/it. The talking window will appear.
+<P>Notice the buttons at the bottom of this area. Click on 'Name' and 'Job', and you'll get the basic information that character has to say.
+<P>To ask someone about something, click on the word after they say it. If someone says "I really hate goblins," click on goblins to ask about it. If the person has something to say, the word will flash, and something else will come up. To see what the person said previously, click on 'Go Back. '
+<P>Talk to people in the fort. You'll notice that the guards don't talk to you, but most everything else (including the cat and the lizard) has something to say. Be especially sure to go to the northwest corner of Fort Emergence and see Anaximander, one of the most important characters in the game. Also be sure to see Levy, who can give you things.
+<P>Finally, talking to people is how you will buy food and equipment. To see if someone has something to sell, hit the 'Buy' button. If they do, click on the item name to buy it.
+
+<P><B>Killing Stuff -</B> Now it's time to go out and fight. Might as well get used to combat - you're going to be doing a lot of it!
+<P>You can find stuff to kill by either finding a dungeon (there are two easy dungeons northeast of Fort Emergence in Upper Exile - leave Fort Emergence to the south to get to Upper Exile), or wandering around outdoors. When you get attacked, to strike back, simply move into the hostile monster. You'll swing whatever weapon you have in your hand. The text area in the lower right will tell you how your attack went.
+<P>When you kill stuff, the dead monsters will often leave behind more items for you to get. Unfortunately, you won't always know what these items are, and you won't be allowed to sell them until you do. There are, fortunately, people in towns who (for a fee) will tell you what they are. One such person is Habecker, in Fort Emergence.
+
+<P><B>Casting Spells - </B>The other necessary skill for playing Exile III is casting spells: magical incantations which do all sorts of stuff. There are two sorts of spells: mage spells, which tend to do damage and help in combat, and priest spells, which tend to heal and help the party.
+<P>The easiest way to cast a spell is to use the Mage Spells or Priest spells menus. To have a PC cast a spell, click on his/her name to make the PC active. The Mage Spells (or Priest Spells) menu will list all available spells. Select the spell to cast it. If it's a spell cast on another character, like Minor Heal, you'll be asked who to cast it on.
+<P>You can also cast spells by using the Mage and Priest Spell windows, which you bring up by clicking on the spell casting buttons in the lower left, or by typing  'm' or 'p'. Instructions for using these windows are given in the spell casting chapter. They're a little more complicated to use, but have the advantage of being usable entirely from the keyboard.
+<P>There are seven levels of spells, each more draining and powerful than the spells in the level before. You start with characters able to cast most spells up to level 3. 
+
+<P><B>Secret Doors -</B> Some doors (in all sorts of walls and in cave walls as well) are hidden. To search the walls, walk into them. If there is a secret door there, you'll pass through the wall.
+<P>Go to the empty bunkroom in the southwest corner of Fort Emergence and try this. You may find some interesting surprises.
+
+<P><B>If you get stuck - </B>Of course, it's possible that you will still get stuck. Maybe you always get killed, or you can't find any money, or something else. Should this happen, Exile III comes with a character editor, which can heal your characters and give them as much gold and food as they want. 
+
+<P>This is only a brief overview, of course. It says nothing about training, or many important things about spellcasting. It will, however, get you moving, and once you're getting around, you should find the rest falls into place very quickly.
+<P>So welcome to the wild world of Exile III! And good luck! Who knows? You may actually be able to make a difference!
+
+<h4><a name="tips">The Mini Hint Booklet</a></h4>
+If you get stuck somewhere early in the game, this section provides a walkthrough for Upper Exile and Krizsan. If your problem isn't answered there, look to see if your question is listed after the walkthrough, and, if so, look at the number after it. Look for that hint in the list at the end of the section.
+<P>Some hints use x-y coordinates. To find out where you are in a dungeon, cast the Level 1 priest spell Location.
+
+<P><B>Map -</B>
+<P>If you get lost, don't forget there are maps available. Flip to the Special page on the Inventory Screen, and use the maps. If you need more help, there is a detailed map on the outdoors in the hint booklet.
+
+<P><B>Walkthru for Upper Exile and Krizsan Province</B>
+<P><B>Topics covered:</B>
+<P><B><a href="#krizsan">Krizsan Province</a></B>
+<P>What do I do at the Agate Tower? Where is the slime's lair? Once inside, how do I get through the portculli on the lower level? How do I defeat the slimes? How do I destroy a slime pool? 
+
+<P><B><a href="#formello">The New Formello Murders</a>
+</B><P>What's the deal with this? Can I solve them?
+
+<P><B>Fort Emergence
+</B><P>You start in your bedroom in Fort Emergence. You can return here to rest at any time. Get the scroll and read it (by using it). Look in the dressers, and get the stuff. Go talk to Anaximander, who is located at (1,5). He'll tell you to go to the surface, although you can go gain experience in two dungeons in Upper Exile first. These are the Goblin Lair and the Bandit Hideout. There is a map to them in the bookshelf at (10,4).
+<P>You can, if you wish, go explore Upper Exile by leaving Fort Emergence to the south. When you're ready, you can go out onto the surface by leaving to the north.
+
+<P><B><A name="krizsan">Krizsan Province and the Slimes</a>
+</B><P>Upon reaching the surface, head south to the ocean, and look for the city of Krizsan. Entering and asking around, you can find out about the horrible invasion of slimes that has been tormenting Krizsan Province. Destroying the slimes is not necessary to win the game. However, if you don't destroy them, you must eliminate the cockroaches on the Isle of Bigail to be able to win.
+<P>Speak with Mayor Arbuckle, who will give you a mission to go destroy the slimes. Then search town until you find Dawn the sailor. She will tell you of strange lights she has seen on the coast to the west. This is a good place to investigate.
+<P>Heading west from Krizsan, you can find the Agate Tower. This is an important, but tricky dungeon. You may wish to adventure elsewhere to gain experience before venturing inside.
+<P>Once in, you need to get to Jordan's library, where you will find out the location of the Slime Pit and the main weakness of the slimes. Walk down the entry corridor, and get dropped into the basement. Go through the door at (7,32). You will be in Jordan's inner sanctum. Explore it, kill him, and search the bookshelves around (13,42). You will now know where the Slime Pit is, and have learned that fireballs destroy the pools where slimes are made.
+<P>Leave this area through the door at (15,39). Head east, destroying the slime pool with a fireball if you want, head north, and climb the stairs at (23,27). Pull the lever at (19,24) to turn off the corridor traps, and walk out.
+<P>Now, if you're feeling strong, you can assault the slime pit, southeast of the town of Colchis, which is east of Krizsan. Exploring Colchis thoroughly, you can find two magical items which can provide protection against the slimes' nastier magical effects.
+<P>When ready, enter the Slime Pit. Head west to the pedestal at (32,29). This is the first of many button puzzles you will encounter. There are five stairways down on the first level of the slime pit. The location of each button on the pedestal corresponds to the location of a stairway down. When pressed, the button will open the gate at the base of that stairway. Explore the level, pick a stairway, press the button corresponding to that stairway, and climb down it.
+<P>Level 2 consists of five separate sections, each populated with slimes, and each ending in a slime pool. Proceed through each section, destroying the pool at the end with a fireball (in the long hall with statues, search the east wall for secret passages thoroughly). When all the pools are destroyed, the barriers on the other sides of the pools will disappear. Go through, and kill the gigantic Alien Slime. Once dead, the slimes will disappear, and you will have successfully completed this quest.
+<P>Go through the secret passage at (24,3), and find the magical rune. Leave the Slime Pit and go to Krizsan to get  your reward from the mayor, and the return to Fort Emergence. Speak to Berra the mage (in the southeast section of Fort Emergence) and ask him about 'evidence.' He'll tell you something interesting. Sometime soon, a visit to Erika will be in order.
+<P>Then see Anaximander. He'll congratulate you, and tell you to visit the Tower of Magi for magical training. Leave Fort Emergence to the south to enter Upper Exile. Go to the Portal Fortress, to the west. Speak with Seles to get permission, and then enter the portal at (5,42). Find Solberg, and he'll give you spells. Each time you complete a monster mission, go speak to either 'X' or Solberg, and one of them will give you some new, powerful spells.
+<P>At this point, everything regarding the slimes is pretty much settled, and it's time to move on. Adventure (and major grossness) awaits you on the Isle of Bigail.
+
+<P><B><A NAME="formello">The New Formello Murders</A>
+</B><P>Sometime around now, Anaximander will tell you of a pair of grisly murders that happened in the Upper Exile town of New Formello, and ask you to investigate. Travel there, and speak with Flanagan. Then head north to the Murder Cave. There's an important item there that you need.
+<P>Inside the murder cave, go to (6,9) to inspect the bodies. Interesting, but you need to do more. Go through the secret passage at (7,7). Fight your way through the tunnels, and step on the special encounter at (25,2). The key there will be very important later on.
+
+<P><B>Other questions</B>
+<P><B>Upper Exile</B>
+<P><a href="#66">In Fort Emergence, how do I get into the room with the Orb of Thralni?</a>
+<P><a href="#3">In Fort Emergence, how do I pass the hidden magical barrier in the mage's section?</a>
+<P><a href="#28">In the Portal Keep, how do I get Seles to let me use the portal?</a>
+<P><a href="#48">In the Portal Keep, how do I get Denise's charm?</a>
+<P><A HREF="#4">In Ghikra, how do I get in to see the Crystal Souls?</A>
+<P><A HREF="#67">In Ghikra, where do I find Koriba's statue?</A>
+<P><A HREF="#29">In Ghikra, how do I enter the southeast section?</A>
+<P><A HREF="#5">In the Bandit Hideout, how do I get in?</A>
+<P><A HREF="#49">In New Cotra, what is that building in the northwest corner?</A>
+<P><A HREF="#30">How do I reach Erika's tower?</A>
+<P><A HREF="#6">How do I get to that island in the middle of the big lake?</A>
+<P><A HREF="#47">Where can I store my items?</A>
+
+<P><B>Krizsan Province
+</B>
+<P><A NAME="#47">What do I do with all these unicorn horns?</A>
+<P><A HREF="#51">At the Distant Hut, what do I do ?</A>
+<P><A HREF="#8">I stole something from Ernest. Can I make him not hate me?</A>
+<P><A HREF="#32">In Pergies, how do I do Paulo's mission?</A>
+<P><A HREF="#9">What do I do with the hermits who give you messages?</A>
+<P><A HREF="#33">In Guhkbar's Pit, what do I do?</A>
+<P><A HREF="#52">A dryad wants me to bring her something beautiful. Where is it?</A>
+<P><A HREF="#27">I was late with a job, and now that dispatcher won't hire me anymore. What do I do?</A>
+
+<P><B>The answers:
+</B><P><A NAME="3">When you've ended one of the monster plagues on the surface, ask Mazumdar about 'tomes'.</A>
+<P><A NAME="4">4. Ask Rentar-Ihrno about 'visit'</A>
+<P><A NAME="5">5. There are secret passages at (11,37) and (33,34).</A>
+<P><A NAME="6">6. Buy a boat from Gointz in New Cotra. Sail into every space next to the rocks around the island. One of them removes one of the rocks, letting you through.</A>
+<P><A NAME="8">8. Use one of his teleporters. It will send you to someplace very unfriendly. After this, however, he'll have forgiven you and the portals will work normally.</A>
+<P><A NAME="9">9. You can carry 10 messages for them. Then they won't give you any more. It's easy money.</A>
+<P><A NAME="27">27. Wait. It will take a while (usually around 50 days), but the dispatcher will eventually forgive you.</A>
+<P><A NAME="28">28. End one of the monster plagues (like the slimes or roaches) on the surface.</A>
+<P><A NAME="29">29. Destroy the golems, take the crystal shards you find there to Berra, and ask him about 'evidence.' You"ll then be able to enter this section.</A>
+<P><A NAME="30">30. Find the rune hidden beyond the Alien Slime in the Slime Pit, discover evidence proving who is responsible for the monster plagues, or complete the troglo/giants mission, and you will be able to cross the bridge to Erika's tower.</A>
+<P><A NAME="32">32. Ask Paulo about 'herbs' Go south and enter Delis. You can walk through the trees at (21,7) to enter the storeroom. Get the herbs, and the door at (19,10) will become unlocked. Leave as fast as you can, return to Paulo, and ask him about 'herbs' again.</A>
+<P><A NAME="33">33. Go west to the pixie at (6,26), and talk to it. Go through the secret passage at (4,27). There is a giant chief at (18,15). If you're strong enough, you can kill him. Otherwise, avoid him, and move north to talk to the dryad at (12,4). Ask her about 'charm'. Move to the box at  (30,15), staying as far away from the giant as possible. If the giant sees you, flee the dungeon, reenter, and try again. Get the key from the box, go back the dryad"s cell, and free her.</A>
+<P><A NAME="47">47. You can leave items in the storeroom at Fort Emergence, the House on a Hill, or Hawke"s Manse.</A>
+<P><A NAME="48">48. Use the portal to go down to the Tower of Magi, and search at (52,37).</A>
+<P><A NAME="49">49. It"s the Bunker. Someone in Sharimik (you need to have registered to get here) can tell you about this.</A>
+<P><A NAME="51">51. Talk to Ernest and hit the Buy button. You"ll then be able to enter one of the portals, and teleport to any large city in Valorim.</A>
+<P><A NAME="52">52. The perfect flower is at the end of a long valley northwest of Libras. Bring it to her.</A>
+<P><A NAME="66">66. Wait. Something will happen with this eventually.</A>
+<P><A NAME="67">67. Go to the Wolf Pit (under the Goblin lair and the Bandit Hideout). Climb the stairs hidden at (30,1).</A>
+<P><A NAME="68">68. Sell them to Captain Agrod. He's in Krizsan.</A>
+
+<P>&nbsp;
+<h3><a name="started">Section 3: Getting Started</a></h3>
+<P><B>3.1 - Starting Quickly
+</B>
+<P>Exile III is designed to be as simple as possible to learn and play. If you, like many game-players, dislike reading the manual before jumping into the game, go ahead. It is recommended you read the Introduction (the next section), the overview of the most important commands (the section before), look at the illustrations to see what the buttons do, and, if you plan to design your characters from scratch (eventually a good idea), read the section describing what the skills are. 
+<P>If you were lucky enough to have played Exile: Escape From the Pit or Exile II: Crystal Souls, you will have a very easy time getting into the swing of things here. The commands are basically the same, and the differences will be pretty easy to pick up as you go along.
+
+<P><B>3.2 - Introduction:
+</B>
+<P>The surface world is ruled by the Empire. That's what its called. The Empire. Not the Empire of Something, or the Something Empire. Just the Empire. It's understandable. There's no need for elaborate names when there's only one game in town.
+<P>For many years, the Empire, in its arrogance, banished everyone it felt didn't fit in. Eccentrics, petty criminals, malcontents, they were all regarded as undesirable by the Empire. And, for many years, these unwanted citizens were sent into Exile.
+<P>Exile was not just a status, however. It was (and is) an actual place. Exile is a network of hundreds of miles of caves and tunnels, forming an enormous, weblike labyrinth of warrens under the surface of the world. Kept lit by magic, fed by fungus, and populated by the unending stream of humans (and humanoids) from the surface, the people of Exile struggled by as best they could for many years.
+<P>When Exile was established, however, the Empire, complacent and arrogant, made its greatest mistake. It sent down several mages, powerful mages, who were on the wrong side of a political struggle. The winners, Emperor Hawthorne and the archmage Garzahd, were confidant that sending down these archmagi would not be a problem. They even thought that maybe their skills could later be harnessed, once they were beaten down by several years of rotting in the sunless lands.
+<P>They could not have been more wrong.
+<P>Some of the exiled wizards, like Rone, and Solberg, and Patrick, were content simply building a better life for the Exiles. One of them, however, was named Erika Redmark. A harsh and vindictive incantatrix, she enlisted a band of adventurers, made tough by their years below, in a wild, dangerous, and eventually successful scheme. She wanted to assassinate Hawthorne, brilliant Emperor of the surface world.
+<P>Five years later, Hawthorne was killed in his own throne room.
+<P>The response was immediate, and vicious. First, the portal into Exile was closed. Nobody was to be sent through. Second, other portals were created in remote areas of Exile. Soldiers were sent there, the finest soldiers in the Empire's army. They had one mission: Vengeance. Not one citizen in this subterranean den of vipers was to escape alive.
+<P>In launching this invasion, however, the Empire made their critical mistake. They discovered a new, bizarre, humanoid race living even farther down in the caves - the Vahnatai. These creatures were highly intelligent and resourceful, and very skilled in the use of crystals for magical deeds. In fact, they had the ability to take the spirits of their ancestors, and bring them back in crystalline form. These revered forefathers, the Crystal Souls, were their spiritual guides, and the beings most revered by their people.
+<P>The Empire, seeing how strange and powerful the Crystal Souls were, kidnapped three of them. The Vahnatai, appalled by the magnitude of this crime but unsure of the identity of the perpetrators, attacked Exile.
+<P>Fortunately, aided by the peaceful Vahnatai Bon-Ihrno, a group of bold Exiles were able to infiltrate the Empire lands, steal the Crystal Souls, and return them to their rightful owners. In return, the Vahnatai joined forces with the Exiles, and used their mighty magic to slaughter the Empire troops. The Empire War finally ended, bloodily and victoriously.
+<P>Aided by Erika Redmark and their new Vahnatai allies, the Exiles built a mighty teleporter, a magical machine able to send many people in an instant from the caves to the surface. Exile has slowly and secretly built Upper Exile, a new network of cave cities just below the surface. The plan - sneak out and find a way to take from the Empire a chunk of land for Exile to use as its own. After many years in caves, your people long to see the light of the sun again.
+<P>Before this can happen, however, much spying and investigation needs to be done, to find out the state of things on the surface. After much thought, training, and reflection, a small group of adventurers has been selected to be the first spies out on the surface - you.
+
+<P>Your job is to explore, and to find out what's going on. That's all - simple recon. However, it is entirely possible that events will take an unexpected course, and that you will become far more enmeshed in affairs on the surface than anyone expected. The question is: will you be up to it?
+
+<P><B>3.3 - Starting the game
+</B>
+<P>Once you run Exile III, you have six options:
+
+<P>      Load Saved Game -  Resumes a game you've already started. 
+<P>Select the save file to resume.
+<P>      Start New Game -   Start a new game.
+<P>      How to Order -   This screen gives the relevant information for 
+<P>when you decide to register Exile III. This includes cost, 
+<P>address, and the registration code (or codes) you will need to
+<P>give when you register.
+<P>      Register Exile -   When you register, you will be given a key (a 
+<P>large number).  Select this option to enter the key to unlock the 
+<P>second half of the game.
+<P>      See Introduction - Replays the introductory animation from 
+<P>when you started the game.
+<P>      Quit - Leave Exile III.
+
+<P>      When you are just starting, you'll want to select Start New Game...
+
+<P><B>3.4 - What is going on?:
+</B>
+<P>You control a group of several adventurers (called player characters, or PCs, for short) who live in a land called Exile. Exile is a nation underground. The people of Exile live in caves far underground, growing pale in the dim green light of mushroom fungus, and growing thin on diets of lizards and moss. You aren't there by choice - you were thrown down there by the Empire, the cruel autocracy that rules the surface world. You have just arrived at Fort Emergence, in the newly settled caves of Upper Exile, where you are supposed to ... What? What is the goal? What are you trying to do?
+<P>      That's a fair question. And there are many answers. Anaximander, in Fort Emergence, has a major quest for you, and there is much that needs doing on the surface. However, that may not appeal to you. You may want to become a rich merchant, or be a courier, or do small missions, saving the tiny, helpless towns from evil, or go on treacherous quests for priceless artifacts (which are not at all easy to find). Even if you ignore the main game mission altogether, Exile III still provides much to do.
+<P>Finding out how to save (or change, or destroy) the world will not be easy. You will need to search caverns, huge and small, convenient and remote, talking to people and searching for clues. And then, when you find out something you can do, you must make the harder choice: Is it something you should do?
+<P>      So go to it! Pick a side, start swinging, and good luck.
+
+<P><B>3.5 - What is a party?:
+</B>
+<P>A party is the group of up to 6 adventurers, called player characters (PCs for short). You can play a party of your own making, or get a prefabricated party provided by the game. When you first run the game, select 'Start New Game' from the opening screen. You can then choose whether to play a prefab party or make one from scratch.
+<P>When you hit Start New Game, you will be given the introduction to the game. Click the mouse button when you're through watching it. Then you will see the Party Creation window. You will be given six prefabricated characters, each with preassigned skills and abilities. To get rid of a prefab PC, hit the Delete button by its name, and then hit the Create button. When your party is how you want it, press the Done button to start the game.
+
+<P>Using the party creation window, you can select each of your character's names, graphics, race, advantages/disadvantages, and skills.
+
+<P><B>Race, PC Traits: </B>  Each of your characters can be one of three different races, and have any of several advantages or disadvantages. These traits will help or hinder your character in various ways. They will also affect how quickly your character gains strength. If you take a character with lots of advantages, he or she will gain skills at a much lower rate. If there are lots of disadvantages, the character will gain skills faster.
+<P>These are the races and character traits. The percentage following each trait is how much slower this character will gain experience. A negative number means the character will gain experience faster.
+
+<P><B>Races:
+</B><P>Human (0%): The default race. The vast majority of Exile citizens are human. Being human conveys no notable advantages or disadvantages.
+<P>Nephilim (12%):  The Nephilim are a race of nimble, feline humanoids. They get a bonus when using missile weapons. Also, when character creation is completed, each Nephilim character gains 2 bonus points of dexterity.
+<P>Slithzerikai (20%):  The Slithzerikai are an ancient race of reptilian humanoids. There are two faction of Sliths in Exile. Some of them are friendly and allied with your people, and some of them are cruel and barbaric, and fight you whenever they get the chance. Slithzerikai are trained from birth to use pole weapons, and get a sizable bonus when attacking with them. Also, when character creation is completed, each Slithzerikai character gains 2 bonus points of strength and 1 bonus point of intelligence. Finally, Slithzerikai are resistant to poison.
+
+<P><B>PC Traits:
+</B><P>Toughness (10%): A character with toughness is protected from damage. Practically any sort of assault does less damage.
+<P>Magically Apt (20%): This powerful trait makes most spells cast by the PC more effective.
+<P>Ambidextrous (8%): When using a weapon in each hand, the second weapon is used with a large penalty. This trait removes that penalty.
+<P>Nimble Fingers (12%): This trait makes the owner much better at picking locks and disarming traps.
+<P>Cave Lore (4%): The character with this trait is very familiar with the flora and fauna of the caves. When traveling, you will occasionally gain food from hunting. Also, this trait has other, subtle effects. Make sure at least one PC has it.
+<P>Good Constitution (10%): This trait makes the character more resistant to poison and disease.
+<P>Woodsman (6%): This trait is like Cave Lore, but comes in handy in the forests and glades of the surface. You will be able to hunt, move more stealthily, and occasionally notice interesting details.
+<P>Highly Alert (7%): Some of your foes will try to magically put you to sleep. Having this advantage makes you more likely to resist this nefarious effect.
+<P>Exceptional Strength (12%): This powerful advantage makes the lucky character be able to carry more stuff and do more damage in hand to hand combat.
+<P>Recuperation (15%): This is a powerful trait, indeed. The PC with this trait has almost supernaturally good health, and will heal damage at a much faster rate than normal.
+<P>Sluggish (-10%): This character has much slower reactions. He or she will get one less action point in combat.
+<P>Magically Inept (-8%): This character never got the knack of using magical items. For some reason, they just don't work on him or her. The PC with this trait cannot use magic items.
+<P>Frail (-8%): This PC is a natural target for colds and other illnesses. They easily take advantage of the PC's weak constitution. Poison and disease have a harsher effect.
+<P>Chronic Disease (-20%): This poor character has been cursed with notoriously poor health. Illness constantly nips at his or her heels. This character will occasionally, spontaneously become diseased.
+<P>Bad Back (-8%): Owning this trait makes the character unable to carry as much.
+
+<P><B>Skills: </B>  A PC created from scratch gets 60 skill points. Skill points are a sort of money you will spend on abilities.
+<P>When you press the Skills button, you will see a window where you can increase and decrease this PCs skills. To spend skill points to increase an ability, press the '+' button next to it. Press the '-' button to undo the action. The cost in skill points to increase your value in each skill is the number before the slash in the 'Cost' column. The number after the slash isn't relevant yet (it becomes important when you train your characters).
+<P>      Should you spend the points and be satisfied, press the 'Keep' button. If you want to start again, press cancel. When you buy and keep you skills, you go to the next step...
+
+<P><B>PC Graphic:</B>   To assign a PCs graphic, press the Graphic button. Click on the button besides the graphic you want to use to represent your PC, or press cancel to begin the whole process anew.
+<P>If you have a Nephilim or Slith character, it is recommended (though not necessary) that you pick a graphic from that race.
+
+<P><B>PC Name: </B>  To choose a name for your character, press the Name button. It must begin with a non-space character.
+
+<P><B>What about sex? Race?:</B>   You won't be specifically asked whether your character is male or female. If you want your warrior to be a woman, select a female graphic and appropriate name. 
+
+<P><B>Making a New PC:</B>   Should you start with less than 6 PCs or drop one later on, you can get another. Go to Fort Emergence, and select Create New PC from the Options menu.
+
+<P>      To find out what all these skills are good for, keep reading...
+
+<P><B>3.6 - Getting To Know Your Characters:
+</B>
+<P>      Your little computerized people are, basically, a whole bunch of numbers, each determining how well he or she deals with the horrid threats the game will come up with. These are the most important statistics:
+
+<P><B>Level and Experience: </B>  These two numbers (starting at 1 and 0 respectively) represent how much stuff your character has done. Your experience goes up when you kill stuff and complete missions. For every 100 experience points you get (adjusted up or down for race and PC traits), your level increases (up to a maximum of 50). When your level increases, you gain some health points and skill points (described below), and become a little better at everything you do. Alas, the higher your level, the fewer skill points and health you gain.
+
+<P><B>Skill Points: </B>  As mentioned before, these points are the money you will spend to increase your skills. After creating your character, you will spend them at training schools, located in certain towns. For example, Yanmitho in Fort Emergence does training.
+
+<P><B>Current Health:</B>   This very important number represents how much punishment your PC can take before dying. Every time he or she is damaged, the number goes down. Time and magical healing raise it again, up to a you maximum amount. Keep an eye on it! 
+<P>      Every skill point spent on health increases your maximum by 2.
+
+<P><B>Spell Points:  </B> This number represents how many and how powerful spells your PC can cast. Whenever a spell is cast, you lose some spell points. Time and certain magic items bring the level back up. 
+<P>      Every skill point spent on spell points increases your maximum by 1. Also, every level of Mage Spells and Priest Spells (described below) bought while creating your character gives you three bonus spell points.
+
+<P>      You can have a maximum of 250 health points and 100 spell points.
+<P>      The myriad skills you can buy for your characters are described below. Each can attain a maximum level of 20, unless otherwise specified. The cost for each skill in Skill Points is in parenthesis after its name. Note that, when training in these skills later, each point of increase will cost gold too.
+
+<P>Strength (3):  Measures how much brute strength the character possesses. High strength increases damage done in combat, improves odds of kicking down doors, and has other, more subtle effects.
+<P>IMPORTANT - Strength also affects how much health you gain when you attain a level, and how many items you can carry. Buy strength up to 3 as soon as possible. Otherwise, you won't gain much health when you gain levels.
+
+<P>Dexterity (3):   Measure how nimble the character is. High dexterity gives a better chance of hitting in combat (esp. with missile weapons) and makes the character harder to hit. High dexterity also makes picking locks and disarming traps easier.
+
+<P>Intelligence (3):   Measures mental strength and dexterity. High intelligence also makes your spells more effective, sometimes very much so. Intelligence below 4 makes your spells work poorly.
+
+<P>      The above three skills are important. When high, they give many bonuses in the things you do. On the other hand, when one of these three skills is below 4, the PC will have penalties in any situation involving that skills. A PC in combat with a 1 dexterity will miss a lot.
+
+<P>Edged (2), Bashing (2), Pole (2), Thrown Missile (1), Bow (3):    The higher the skill, the better the chance to hit in the appropriate weapon type:
+<P>Edged:  Daggers, swords, axes.
+<P>Bashing:  Clubs, maces, flails, hammers.
+<P>Pole:  Spears, halberds, bardiches, slith spears.
+<P>Thrown Missile:  Darts, Thrown daggers
+<P>Bow: Bows, Crossbows
+
+<P>Defense (2): This skill has three effects. It determines how well a character does at parrying, decreases the penalty in combat from bulky armor, and occasionally decreases the damage taken from enemies weapons.
+<P>Bulky armor prevents a character from casting mage spells. However, when your armor is only a little too bulky, sometimes casting a mage spell will sometimes work when the mage has high defense skill.
+
+<P>Mage Spells (6), Priest Spells (5):  These two skills are very expensive and very powerful. They enable the owner to cast spells of the appropriate type of a level up to the level of skill owned. The maximum level for both is 7.
+<P>      You automatically know most spells of level 3 and below. It takes some time to find spells of level 4 and above. Thus, getting these skills above level 3 at the beginning may not be a good idea.
+
+<P>Mage Lore (1):  You will occasionally need to decipher strange magical readings. This skill determines how good you are at this. If your skill is high enough, you may gain a spell or a valuable piece of information. What is important when trying to decipher something is how much of this skill is present in the party. One character with 18 Mage Lore is equivalent to 6 characters with 3 Mage Lore.
+
+<P>Alchemy (2):  You will eventually gain the ability to make magic potions. To make a given potion, however, your Alchemy skill must be above a certain level. The higher it is above this level, the better the chance of succeeding.
+<P>When one PC is trying to make a potion, only that PCs Alchemy skill counts. Thus, it is much, much better to have one PC with high Alchemy skill than several PCs with low Alchemy skill.
+
+<P>Item Lore (4):  When you kill a monster, there will occasionally be items on its body. Normally, you wouldn't know what they were. However, Item Lore skill makes it possible that when you find the item, you will know what it is. Otherwise, you would have to take it to town and spend money to identify it.
+<P>The higher the Item Lore, the better the chance of the item appearing identified. In general, several PCs with low Item Lore is better than one PC with high Item Lore.
+<P>Item lore does not affect items already in town when you enter, or items gained in special encounters.
+
+<P>Traps (2):  Many chests and some corridors will have traps on them, which can be devastating. You will, however, be given a chance to pick a PC to disarm it. Chance of success depends on this skill.
+
+<P>Pick Locks (2):  Many towns and dungeons will have locked doors. A PC with some of this skill and lock picks equipped can try to pick them. The higher this skill, the better. Beware. Some locks are magical, and cannot be picked. Try the spell Unlock Doors on these.
+
+<P>Assassination (4):   Sometimes, when a character attacks a much weaker monster, the blow will do a good deal of extra damage. The more of this skill you have, the better the chance of this happening, and the stronger the monsters it can happen to.
+
+<P>Poison (2):   You will find poisons, which you can put on your weapons for a little extra punch. Having a few levels in this skill will make it more likely you will put the poison on at full strength, and the less likely you will nick yourself with the poison accidentally.
+<P>      Although you can buy a lot of this skill, 3-4 levels should be sufficient.
+
+<P>Luck (5):   This skill is expensive, but can be a bargain at twice the cost. Its effects are pervasive, subtle, powerful, and sometimes irreplaceable.
+
+<P>      Eventually, one way or another, you will have a party to control. At this point, you will be dumped into Exile. In particular, you will be in one of the towns there...
+
+<P>&nbsp;
+<h3><a name="screen">Section 4 - The Exile Screen:</a></h3>
+<P>When you start the game, you will be looking at the main Exile III screen. This screen has six distinctive parts:
+
+<P><B>Terrain Screen:   </B>When outside or in town, the person in the middle represents your party. Around you will be the flora, fauna, and miscellaneous stuff of the surface or underworld.
+<P>       To move around, move the cursor into the terrain screen. Move it around. It will turn into an arrow. Click the mouse button when the arrow points in the desired direction. When looking, picking locks, etc. (all described below), to select the item to look at (or whatever) click on it.
+<P>       The border of the terrain screen is also something to click on. When looking, aiming a missile, or targeting a spell, clicking on the terrain screen border will shift the view of the terrain screen in the appropriate direction.
+
+<P><B>Text Bar:</B> This bar contains information about what's going on. When in combat, it tells you who is active and how many action points they have remaining. Outdoors or in town, it tells you where you are.
+
+<P><B>Buttons:  </B>  These change depending on your setting. What the Outdoor/Town/Combat buttons do is described in the relevant sections.
+
+<P><B>PC Status Screen:  </B> This lists the  characters in your party, and tells you their current health or status. There are several things you can click on  or find out about here:
+
+<P>Character's Name: When not in combat, clicking on a character's name makes that character active. The name of the active character appears in italics. The Mage Spells and Priest Spells menus list the spells for the active PC.
+<P>Health and Spell Points: Click on these numbers to be told the maximum number of health of spell points the character can have.
+<P>Trade Places Arrows: To have two characters trade places in the roster, click on the arrow button to the right of the first character, and then of the second.
+<P>Character Info Button: To see a window giving detailed information about the character's spell, statistics, etc., click on the '?" button to the right of the character"s name.
+<P>Gold/Food/Day: At the bottom of this window, you can see your parties current gold and food totals, as well as what day it is.
+<P>Help Button: Clicking the button with the '?" gives you help for this area.
+
+<P>By each PC's name will occasionally appear a symbols representing that character's status. 
+
+<P><B>PC Inventory Screen: </B>This area lists the inventory for the current active character. There are several things you can do here:
+
+<P>Equip/Remove Item: An equipped item's name appears in italics. To wear an item, click on its name. To remove it, click again. Equipped weapons appear in red, armor in green, and everything else in blue.
+<P>Use Item:  Click on the 'U' button to use an item.
+<P>Drop Item:  To drop an item, click the 'D' button, and then click where in the terrain you want to drop it.
+<P>Figure 4: Inventory Screen Buttons
+
+<P>the space to drop it in (if in town) or say you definitely want to drop it (when outdoors). Items dropped outdoors are lost forever.
+<P>Give Item: To give an item, click the 'G' button, and select a recipient.
+<P>Item Info:  Click on 'I' for a detailed description of an item.
+<P>PC Buttons:  Click on the numbered buttons at the bottom of this window to make this character active (in town or outdoors) or see this character's inventory (in combat).
+<P>'Spec' Button:  Clicking this button brings up a list of the special items you've obtained. Most of these (such as keys) are used automatically when needed. Others, such as maps, are used by clicking the 'U' button to the right.
+<P>'Jobs' Button:  Clicking this brings up a list of your current jobs. See the section on 'Getting Jobs' in Chapter 6. 
+<P>Help Button: As always, clicking the button with the '?' gives help for this area.
+
+<P><B>Text Screen: </B>This area gives you a running account of what's going on. If you miss something, use the scroll bar.
+
+<h3><a name="menu">Section 5 - The Exile III Menus:</a></h3>
+<P>Exile III's menus can perform many of the actions in the game, and dispense help and information as well.
+
+<P><B>File Menu: 
+</B><P>Save, Save As:  This option has Exile III take a "snapshot" of your current position in the game, so you can resume from this point later, should you mess up. Exile III will prompt you for the name of your save file. You can only save the game in town or outdoors. Making several back-up save files is recommended.
+<P>Restore: Selecting this has you load in one of your older games. You can do this anytime.
+<P>New Game:  Should you get fed up, you can start over again.
+<P>Preferences:  This option brings up the preferences dialog. This is described below.
+<P>Quit: When you've just plain had enough.
+
+<P><B>The Preferences Window:
+</B><P>From here, you can change how the game plays.
+
+<P>Display Alignment:  This option determines how the Exile III window is drawn on the screen. You can have the game take up the full screen, with the game information drawn in a corner you choose, or you can play Exile III in a window you can drag around the screen.
+<P>Game Speed (Fast/Medium/Slow):  This option reduces or increases the speed at which things take place.
+<P>No graphics frills:  When turned on, most of Exile III's animation and graphics tricks disappears, resulting in a dramatic increase in game speed.
+<P>Turn off terrain animation:  When on, Exile III's terrain will not be animated, making the game go faster.
+<P>Turn off frills on shore:  When on, the frilly edge at the edge of pits, water, and lava won't be drawn, making the game go faster.
+<P>Don't Save Maps:  Normally, the game stores maps you've found in your save files. This makes the save files 60K larger. Selecting this option keeps Exile III from saving your maps, resulting in smaller save files.
+<P>No Sounds:  This option turns off the game's sounds.
+<P>Show Room Descriptions More Than Once:  Often, you will find a special encounter which shows a description of what you've just found. Once found, most of these won't be printed again. This option makes the messages kept around to be printed whenever you encounter them.
+<P>Never Show Instant Help:  When selected, the Instant Help windows will never appear.
+<P>Reset Instant Help:  Click on this to make all Instant Help windows appear again.
+<P>Make Game Easier:  When on, monsters will have fewer health points, and do less damage. 
+<P>Fewer Wandering Monsters:  When on, fewer monsters will randomly appear outdoors and in towns.
+<P>No Targeting Line (Windows Only):  If getting crashes when targeting a missile or spell, you may have problems with your display driver. Turn this on to remove the problem.
+<P>Fewer Sounds (Windows Only):  If you have an older sound card (or sound card driver), some sound effects may cause crashes. Turn this on to remove the problem.
+
+<P><B>Options Menu:
+</B><P>Pick New PC Graphic:  You can use this option to change the graphic of a PC. You will be asked which PC.
+<P>Pick New PC Name:   You can use this option to change the name of a PC. You will be asked which PC.
+<P>Create New PC: When this is selected in Fort Emergence, you can create a new PC. Of course, this only works when you have less than 6 people in your party.
+<P>Delete a PC: This lets you select a character to delete permanently.
+<P>See Adventure Journal: When you do something important, the deed and the day it was performed will be recorded in this window. You can go here to see a review of what you're accomplished so far.
+<P>See Talking Notes:  When you record something while talking to somebody in town, you can review it here.
+<P>See Encounter Notes:  When you record a message in a special encounter, you can review it here.
+<P>See Overall Party Stats:  This brings up a tally of how many things you've killed, how much experience you've gained, and other vital statistics.
+
+<P><B>Help Menu:
+</B><P>This menu brings up various reminders of the commands in the game. As a shortcut, typing '?' bring up the most relevant help screen for your current situation.
+
+<P><B>Monsters Menu:
+</B><P>This menu provides a reference for monsters in the games, and their vital statistics. You can make a monster appear here by casting Scry Monster on it.
+
+<P><B>Library Menu:
+</B><P>This library menu options are extremely useful. They are your best source for information about Exile III: its spells and monsters, handy tips for playing, and other useful things.
+
+<P>Mage Spells: This brings up a window which describes all of the mage spells in the game.
+<P>Priest Spells: This brings up a window which describes all of the priest spells in the game.
+<P>Skills:  This option brings up a window describing the different skills your characters can attain, and giving hints for how much of them to buy and when.
+<P>Alchemy &amp; Poison:  This window describes the different alchemical concoctions and how to make them, and tells how best to use poison.
+<P>Tip of the Day:  This very useful option gives a host of hints for playing Exile III.
+<P>Show Introductory Dialog:  This option brings up the dialog you saw the first time you ran the game.
+
+<P><B>Actions Menu:
+</B><P>Do Alchemy:  When in town, select this option to try to make a potion. There is more information on this in the next section.
+<P>Wait 100 Moves:  When in town, you cannot make camp. Selecting this option, however, has you wait for a long time in order to regain health and spells points. Beware - the monsters can use this time to get reinforcements.
+<P>Display AutoMap:  This  brings up a map of your current location.
+
+<P><B>Mage Spells, Priest Spells:
+</B><P>These menus constantly list the spells the active PC can currently cast. Select a spell to cast it.
+
+<h3><a name="town">Section 6 - Getting Around Town</a></h3>
+<P>     When you begin the game, you will be in one of Exile's many towns and forts. There are a variety of things you can and should do. 
+
+<P><B>Moving around:</B>   To move, place the cursor on the terrain screen in .the direction you want to move (it should turn into a little arrow) and click. You will take a step in the direction the arrow points. To move up, for example, move the cursor above the little person in the middle (you). The cursor should turn into an arrow pointing up. Click. You will move up a space.
+<P>      You can also move using the keypad. Hitting '5' pauses your party, '8' makes you move up, '2' down, and so on.
+<P>      If you cannot move there, because of something in the way, the text screen will tell you so. If you've stepped on something unpleasant, like swamp, lava, or some sort of trapped square, you will be informed. There are several interesting things to know about moving around...
+
+<P><B>Leaving Town: </B>When you want to leave a town or dungeon, pick a direction and keep walking. Eventually, when you walk off the edge of the map, you will be outdoors. A handy way of telling how far you are from the edge of the map is to use the Map button, described below.
+
+<P><B>Special Encounters: </B> You will occasionally see, both in town and outdoors, a white circle on the the nearby floor/ground/whatever. The white circle signifies a special encounter or occurrence of some sort. Step on it to find out what it is.
+
+<P><B>The Ravages of Time:  </B> Unlike most other role-playing games, in Exile III, inaction has consequences. If you just sit and wait, the world on the surface will crumble. Towns will fall. Characters will die. Buildings will destroyed by monsters.
+<P>Waiting a really long time will never make it impossible to finish the game. It will however, make it more difficult. For example, there will be fewer sages, so you will need to travel farther to get an item identified.
+
+<P><B>Wall and Secret Doors: </B> Not all walls, man-made or otherwise, are as they appear. Some walls (and trees, and pillars, and many other terrain types) have secret doors and hidden tunnels. When you walk into a wall with one of these, you will pass through it. This may not always be a good thing.
+
+<P><B>Locked Doors:</B>  When you walk into a door, you will try to open it. However, some doors are guarded by locks, magical and non-magical. To open a locked door, you can bash it or pick the lock. Bashing only rarely works, and failed attempts are punished by damage. Only strong characters should try to bash doors.
+<P>Locks can be picked by a character who has a decent Pick Locks skill and has  lockpicks equipped. When you fail, there is a chance that one of your picks will break. It is rumored that you can find higher quality lockpicks.
+<P>Finally, some doors are magically locked. Bashing and lockpicking will not work - you will need to use the mage spell Unlock Doors. And, every great once in a while, you will find a door on which none of these methods will work! You'll need to find a key or lever or something else to open it.
+
+<P><B>Boats and Horses:  </B> Both outdoors and in town, you can find boats. To enter one, move onto it. To leave it, steer it onto ground. Boats are essential to get to certain interesting places, and may be able to travel over more things than water...
+<P>Horses, on the other hand, enable you to move over land much faster. Monsters are easier to outrun, and the time it takes to travel outdoors will be halved. To mount horses you own, move onto them. To dismount, pause (click on your party or press '5' on the keypad).
+<P>When you find boats and horses you don't own, you often will be able to find someone nearby to sell them to you.
+
+<P><B>Light: </B>  Some areas are dark. To see beyond your nose, you will need a light source, be it a torch or spell. In certain unpleasant areas, even a torch or spell won't get rid of the darkness.
+
+<P><B>Pausing: </B>  Sometimes, you'll want to just sit and watch the world go by. Click on your party or hit '5' on the keypad to just wait.
+
+<P><B>Alchemy:</B>   One of the things you can do in town is use ingredients you've found in your adventures to try to make potions. Should you have the right ingredients, the right recipe, and a PC with sufficient alchemy skill, select Do Alchemy from the Actions menu. You will be asked who is going to make it, and then given a list of potions you can make. Certain potions cannot be made by a character with low alchemy skill. The higher the alchemy skill, the better the odds of success.
+<P>For more information on the things you can make with alchemy, inside the game select Alchemy Info, under the Library menu.
+
+<P><B>The Town Guard:</B>  Be careful! Damaging a friendly townsperson or stealing items can get the town guard after you! If this happens, you best flee town, before they destroy you.
+<P>An angry town will generally forget that it's mad at you, if you stay away for long enough.
+
+<P><B>Selecting Spaces Shortcut: </B>  When you hit the 'look' button (or the 'talk' button), click on the space you want to look at to look at (talk to) it. A quicker way to look at something is to hit 'l' on the keyboard, and then the keypad key in the direction you want to look. This has you look at (or talk to) whatever is in the next space in that direction.
+
+<P><B>The Buttons:</B>  Each of the many buttons at the bottom left corner of the screen has you do something. Several of them have keyboard equivalents. When they do, the key is given in the parenthesis below:
+
+<P><B>Cast Mage (Fireball. "m"):  </B> You will be asked to select one of your party members, who will then be given a chance to cast any mage spells he or she knows. Mage spells are described later.
+
+<P><B>Cast Priest (Black ankh. "p"): </B>  Same as cast mage, but for priest spells.
+
+<P><B>Look  (Eye. "l"):</B>   Clicking on this button and then on a space in the Terrain Screen gives you a list of everything in the space you click. Terrain, monsters, and items will be listed.  Also...
+
+<P>Looking Off screen:  When you look, if you click on the terrain border, the terrain you're looking at will scroll in the direction you click on, so you can see the monsters  before they're right on top of you.
+<P>Signs:  When your party is adjacent to a sign, you can read it by looking at it.
+<P>Searching Stuff:    When your party looks at something it is standing adjacent to, you will search the crate/desk/bookshelf/body/whatever for interesting things. If there is something there, you will have a special encounter. Some dungeons have very interesting things hidden in very mundane objects.
+
+<P><B>Talk  (Lips, "t"): </B>  You can talk to any living creature which is not actually trying to kill you. To do so, click on this button, and then the thing you want to talk to.  You will then be presented with a window with a description of the person.
+<P>To ask someone about something, click on the word after they say it. If someone says "I really hate goblins," click on 'goblins' to ask about that. If the person has something to say, the word will flash, and something else will come up. In addition, there are buttons at the button of the talk area:
+
+<P>Look/Name/Job:  Clicking on these buttons always gets a response, and clicking on 'Name' and 'Job' is the best way to begin a conversation.
+<P>Ask About:  This extremely important button lets you ask characters about things beside what they mention. For example, if you're told to ask Honkblatt about swords, when you find Honkblatt, click on Ask About, and enter 'swords' and you may be pleasantly surprised.
+<P>Go Back:  Clicking on this brings up whatever the character said previously. A useful time saver.
+<P>Buy/Sell:  Many characters will buy, sell, or identify items, or otherwise do useful things. These buttons provide a useful shortcut to obtaining these services.
+<P>Record: This has your characters write down what was just said. You can review it later by selecting See Talking Notes from the Options menu.
+<P>Bye:  Ends the conversation.
+
+<P>Other interesting things about conversation:
+
+<P>Special Information:   Occasionally, someone will tell you something that will help you do something else, such as a password or the location of a hidden item. When this happens, you will be told something along the lines of "You take note of this."  This means your characters know something new.If you die later without saving, be sure to go back to get this information again.
+<P>Stores:   Most of the towns have a store of some sort in them. To buy something or sell something, you can generally press the appropriate buttons. How to buy, sell, and identify items is described later on.
+<P>Training:   You can spend your experience to gain valuable skills at the occasional training center. This works exactly the same as when you created your character, but you also have to pay gold. Each level in a skill costs the amount after the slash in the cost column. Should you buy some skills and then decide you don't want them, press the Cancel button to restore your character. Press the Keep button to keep the training.
+<P>Boats and horses:  Some people will sell you boats and horses, both useful ways to get around. When you buy one, a nearby boat or horse will become yours, and you will be able to enter/mount it.
+
+<P><B>Get   (Hand picking up scroll. "g"): </B>  When you see items nearby, click on this button to get them. If hostile monsters are in sight, you will only be able to get adjacent items. If not, you will be able to get all items nearby.
+<P>When the item getting window comes up, click on an item to get it. To have a new PC get items, click the button by their picture.
+<P>Finally, some items in towns are not your property. Getting these items puts you in danger of being attacked by the town guard!
+
+<P><B>Use   ("Use", "u"): </B> This all-purpose command has you do something to an adjacent space. Using an open door closes it, and vise versa. Using a space with webs has you clear the webs away. Perhaps this action has other uses...
+
+<P><B>Map   (A Scroll, "a"): </B>  As you wander around the town or dungeon, you will automatically keep track of the terrain you see. When you click this button, you will see a map of the area you're in. 
+<P>      Also, you can leave the map window up while you play. It will keep updating itself as you travel. Note that this will slow the game down.
+
+<P><B>Enter Combat Mode   (Sword. "f"):</B>   As you wander around, someone or something might decide to attack you. When in town mode, you travel in a tight-knit, awkward group. Thus, you can't fight back, and the monsters move and act faster than you.
+<P>      To deal with this unpleasant situation, click on this button to enter combat mode. Your group will split up into its individual members, and you will be able to fight back.
+
+<P><B>Buying Items: </B> Often, someone you meet in town will have something to sell you. Clicking on the Buy button will bring up the shopping window.
+<P>The items available will be listed, along with their prices, and, if weapons or armor, their important statistics. To get detailed information on an item, click on the 'I' button to the item's right. To buy it, click on the item's name. To have a different character shop, make that character active (click on his/her name, or type '1'-'6').
+<P>There are some unusual sorts of shops:
+
+<P><B>Healers:</B>  Visiting a healer brings up a list of bad conditions the active character has, with the cost to heal that ailment. You can, for example, pay to heal a character's dumbfounding, but leave the character's damage unhealed.
+<P>Alchemists:  A few characters sell alchemical recipes. You only need to buy each recipe once for the entire party. The seller will usually explain what ingredients that recipe calls for.
+<P>Mage and Priest Spells:  Most spells can be bought from people in towns. When you buy a spell for one character, only that PC knows it. You need to buy it again for other PCs who want it.
+
+<P><B>Selling/ID'ing/Augmenting:</B>  Some characters in town will attempt to buy your items. When you hit the Sell button while talking, smaller Sell buttons appear by your items. Some people only buy armor, some only weapons, some everything. Click the small Sell button to sell an item. 
+<P>People will only buy identified items. To identify an item, go to a sage (such as Habecker, in Fort Emergence). Ask about 'identify' (or, usually, click the Buy button), and ID buttons will appear by your unidentified items. Click this button to pay to have it identified. You will now know exactly what it is.
+<P>Finally, a very few people will cast magical spells to strengthen your identified, non-magical weapons. When this is offered, small 'Augm' buttons will appear by items that can be augmented. Press them to buy the improvement.
+
+<P><B>Getting Jobs:</B>  One person in or near each of the five big cities on the surface will offer you jobs. These jobs, generally delivery or courier jobs, are an excellent way to make money. When the jobs window comes up, click on the button by the job to accept it.
+<P>To deliver a message or item, talk to the character it's going to. Be careful not to be too late, however. If you are late in delivery, the job dispatcher who gave you the job will get mad at you, and will give you no new jobs for some time. To find what jobs you have, click on the Jobs button in the Inventory Screen.
+
+<P>      When you leave town (or go into combat) the buttons will change. The next two sections say what the new buttons do.
+
+<h3><a name="outdoors">Section 7 - Getting Around The Outdoors:</a></h3>
+<P>When you leave town, you will be in the massive caverns that make up Upper Exile, or the seemingly limitless expanses of the surface. The things you can do out here are similar to what you can do indoors, but slightly more restricted. 
+
+<P>Moving around and casting spells works the same as in town. However, the spells you can cast are a bit more limited. Looking works the same, although there will no longer be things to search (there are still signs to read). 
+<P>The map button works the same. You will keep track of what you've seen outside, and can call it back up. However, if you move a long way away from an area and then return, you may have forgotten what you saw the first time.
+<P>When you see a town, tower, fort or dungeon, move onto it to enter it.
+<P>As in town, you can find boats and horses to get around on. Move onto a boat to board it, and steer the boat onto ground to disembark. 
+<P>Watch out for waterfalls! Not only will they suck you down them, but when you fall down one you lose a bunch of food too.
+
+<P>There are three new buttons outdoors:
+
+<P><B>Rest   (A tent): </B>  When you are far from a friendly town and a hospitable inn, this is your best option for recovering strength. When you press this button, you will settle down for a while and sleep. You will wake up, however, if a group of monsters gets close to you, and not get any rest in the bargain. It is usually best to rest in secluded areas.
+<P>You cannot rest if someone is poisoned, or if you don't have enough food to get through the night.
+
+<P><B>Save   (Disk with arrow pointing to it), Restore   (Disk with arrow out):  </B> These magical buttons enable you to make a 'snapshot' of the current status of your game so that, should you get killed, misplace the game-winning artifact, etc., you can return to the spot you saved at.
+<P>When you click on save, you can enter a name for the snapshot of your progress. When you restore, double click on the file you saved. You can also save from the pull-down "File" menu. You can also save in town. See 'Other options' below..
+<P>      
+<P>There will still be combats outdoors. Occasionally, monsters will run up to attack you. When this happens, you will find yourself on a battlefield where you will fight the monsters, much as you would have fought them in town. Finally, certain outdoor combats are automatic. These special combats will happen even when you aren't adjacent to the monsters.
+<P>You can drop items outdoors, but when you do they're gone forever. Should a PC die (of starvation, for example), the PCs items will appear on the ground the next time you enter a town or get in an outdoor combat.
+<P>Finally, note that traveling outdoors is very time consuming. Be careful not to do too much of it, until you get horses. See the section in the previous chapter on The Ravages Of Time.
+
+<h3><a name="killing">Section 8 - Killing Stuff:</a></h3>
+<P>      Combat works much like being in town or outdoors, except that you move your party one PC at a time instead of all at once. You will get to move each of your PCs, and then all the other people/monsters move (and maybe attack you). Then the process repeats.
+<P>      The main difference between normal town and combat mode, of course, is that you"re probably trying to kill something.
+
+<P><B>Action Points:</B>  Each turn, each character get a base 4 action points. Wearing heavy armor reduces this amount; being hasted increases it. Whenever you do something, this amount goes down. It can go negative, and when your PC has 0 or less action points, your turn ends.
+<P>The actions you can perform in combat are listed below, with their action point cost.
+
+<P><B>Line of Sight: </B>  A character can only fire a missile or spell at a location he or she can see. Also, trees and other obstructions between the shooter and the target will make the missile less effective.
+<P>When targeting, a line will appear between the attacker and the target. When the line disappears, you can't see the space you're aiming at.
+
+<P><B>Moving and Attacking: </B>  You move by clicking on the terrain screen in the desired direction. To attack something, move into that thing. The result of your attack will appear to the lower right.
+<P>      If you attack someone who wasn't attacking you, you will be asked if you really want to do that. Attacking innocents will bring the town guard down on your head, and you may have a serious problem. Be careful! Merely causing damage to an innocent will also bring the cops down on your head, and you may not get a warning before you do it.
+
+<P><B>Switching Places:  </B>In combat, when one PC moves into another, they switch places. This is very useful during combat in cramped quarters.
+
+<P><B>Stand Ready: </B>   As before, when you click on the active character, that character will wait. However, should a hostile creature then move into weapon range, that PC will attack the enemy.
+
+<P><B>Targeting: </B>  When you cast a magic spell or fire a missile, you select a creature to fire at by clicking on it. When you may want to aim at someone off screen, before selecting your target you can scroll the view around by clicking on the border of the terrain screen.
+
+<P><B>Combat buttons:</B>   The buttons have the following effects:
+
+<P><B>Look  (Eye, "l", 0 AP):  </B> Looking works much as it did before, with one major difference: when you start looking, you can click on the border of the terrain screen to move the view around, and see things that were off-screen before. Note, however, you cannot see things by scrolling the screen around that you haven't yet seen by being close to them.
+
+<P><B>Parry  (Shield, "d", all AP): </B>  Should a character be at risk, you can have that character use his or her turn simply defending. How effective this is depends heavily on the defense skill of the character, although there will always be some benefit.
+
+<P><B>Get  (Hand grabbing scroll, "g", 4 AP): </B>  Works exactly as before, except you don't get to choose who gets the item - the active character gets it.
+<P>    Hitting 'G' has your party grab all nearby items. This only works when no monsters are visible.
+
+<P><B>Wait   ("Wait", "w", 0 AP):  </B> Clicking this has the PC wait for the other PCs to attack. Eventually, he or she will get another chance to act.
+
+<P><B>Shoot   (Arrow, "s", bow - 3 AP, thrown missile - 2 AP): </B>  When you click on this and the active PC has a thrown missile weapon or a bow and arrows equipped, you will shoot a missile at the target you select.
+
+<P><B>End Combat   ("End", "e"):</B>   In town, when you are through fighting, click this button to go back into town mode (whether or not any foes remain). When in an encounter outdoors, you can resume traveling by clicking this button (although it will only work if all the enemies are dead).
+
+<P><B>Active   ("Act", "x"): </B>   Clicking on this button makes the current PC the only active PC. None of the other PCs will do anything until the active PC dies, or you click the 'Act' button again.
+
+<P>Other actions have an action point cost:
+
+<P>Using An Item (3 AP)
+<P>Equipping/Removing An Item (1 AP)
+<P>Giving An Item (1 AP)
+<P>Dropping An Item (1 AP)
+<P>Moving a Space (1 AP)
+
+<P>This sums up the things you can do in combat. But what of the rewards, and the risks?
+
+<P><B>Getting Damaged, Armor: </B>  Every time you get hit, your health goes down. When you receive a blow that would take you to 0 or less health, you end up at 0 health (this is signified by a coughing noise). When you get damaged and have 0 health, you die. When you take a lot of damage and have 0 health, you will be obliterated (making this PC much harder to raise from the dead).
+<P>Fortunately, there is a wide variety of armor in the game. Armor will not reduce the number of blows you take, but will reduce the amount of damage you take when those blows land. However, the heavier the armor, the more it interferes with your ability to attack and cast spells (although defense skill reduces this effect).
+<P>Changing armor takes a while. While you can change helms, gloves boots, and shields in the heat of combat, you cannot change armor. 
+
+<P><B>Dying: </B> This happens. A lot. When it does, all the newly deceased's possessions drop to the ground in a pile. Should this happen when you are in a boat, you may need to row back for them.
+<P>Items can't be dropped when outdoors. Should someone die when wandering around outside, the items will stay with you until you enter a town or get into combat, at which point they immediately drop to the ground.
+<P>Dead people can be brought back to life. This can be done using certain priest spells, or at the healers you will find in some of the towns. If the killing blow does enough damage, it will turn the PC into dust. It will then be much more difficult to raise him/her from the dead.
+
+<P><B>Killing Enemies:</B>   Whenever you kill an enemy, the person dealing the death blow gets some experience, and everyone else gets a much smaller amount. Should this experience give you a level, the game will let you know in the text screen.
+
+<P><B>Treasure:</B>   Will appear when the monster is killed and you get lucky. If you have decent Item Lore skill, the item may even appear fully identified.
+
+<P><B>Fleeing:</B>   Of course, sometimes the enemy is just too tough. When this happens, it is possible to escape.
+<P>In town combat, you must move your party to the outskirts of town, leave combat mode, and then walk out of town. You cannot leave town when you're in combat,
+<P>In outdoor combat, you flee by moving to the boundary of the battlefield (which will look like a black nothingness) and walk off. If you succeed, the character will have fled. When your whole party is fled or dead, or you've killed all of the enemies and pressed the End Combat button, combat will end and your party will be reunited.
+<P>If you are adjacent to a monster and move away from it, it will get a free attack against you. The same goes in reverse.
+
+<P><B>Poisoning a Weapon: </B>  Using poison poisons your equipped weapon, which can be either a hand-to-hand weapon or a quiver of arrows (not darts or throwing knives). Hitting a monster with it then does a considerable amount of damage, spread out over time. The level of the poison decreases with every blow delivered and every blow that lands. The poison is lost should you change weapons or leave town. 
+<P>      Using poison on an already poisoned weapon gives the weapon a strength of poison equal to the maximum strength of the poison already there and the poison you're putting on.
+
+<P><B>Enemy Resistances: </B>  There are a wide variety of types of damage you can do. Hand to hand weapons do physical damage. Poison is another kind of damage, fire is another, non-fire magic (such as ice bolts or kill spells) is yet another. These sorts of damages affect different monsters differently. Many monsters are resistant to fire. Less are resistant to magic. Very few are resistant to poison, however - keep this in mind when dealing with that pesky enemy mage in the back.
+
+<h4><a name="misc">Section 9: Miscellaneous</a></h4>
+<P>9.1 Material Wealth:
+<P>There are three sorts of possessions you can come across:
+
+<P>Gold:   Well, this isn't always literal chunks of gold. It's gold nuggets or silver coins or trade goods or anything else you can give people to get stuff. You start with a small amount, and can get more. Also, Levy, in Fort Emergence, will give you a small per diem.
+
+<P>Food:   Preserved giant lizard steaks, dried mushrooms, yummy, tangy lichens, and all the other rich bounty of Exile. Every once in a while you will eat some of it, one unit for each active PC. Not having enough food results in starvation, damage, and bad things.
+
+<P>Items:   Each PC can carry 24 objects, such as armor, helmets, tools, weapons, etc. You can do various things with these items. These are described in Chapter 4.
+<P>You can only carry so much weight. The amount of bulk you can carry depends on your strength. Armor is very heavy, while potions and scrolls aren't.
+<P>When equipping items, you only have two hands, and some weapons take up both of them. You can only wear two rings, and one necklace (too many magic items interfere with each other in bizarre ways).  Beware. When you equip a cursed item, you will need to find a healer to take the curse off.
+<P> 
+<P><B>9.2 Magic:
+</B>
+<P> There are seven levels of spells. Your characters begin the game knowing most spells up to third level. They can cast a mage spell of a given level if they have enough spell points, and Mage Spells skill of that level (and the same goes for priest spells). Upon casting, the character loses the spell points, and something neat happens.
+<P>      Spell effects are cumulative, and build up quickly. For example, if you bless a character twice, the effect will be much more than twice the effect of one bless. When you poison a monster twice, it will do well over twice the damage the first spell would have caused. If one fear spell doesn't make a monster flee, the next one will have a much better chance of working. Casting two light spells makes the light last twice as long.
+<P>      Mage spells require great delicacy of movement to cast. For this reason, they cannot be cast when when armor with total encumbrance of more than 1 is being worn. High defense skill can sometimes offset this effect, but it never will when any single item has an encumbrance value of more than 2. 
+
+<P>Mage Spells and Encumbrance:  If you are wearing armor with a total encumbrance of greater than one, you cannot cast mage spells. However, high defense skill can counteract this. If your armor isn't too bulky, sometimes defense skill will enable you to cast spells (though spells never, ever work when any single item has an encumbrance value greater than 2). If you fail, however, you lose your turn.
+<P>Priest spells, consisting mainly of prayers shouted very loudly, do not have this limitation.
+
+<P>Multiple Target Spells:  Some spells, such as the Arrow spells, have more than one target. When you cast such a spell, click on each target. Click on a target again to untarget it. Should you decide to cast the spell without using all your targets, hit space.
+
+<P>Magical barriers:  Some spells create a two space wide barrier of some sort of magical wall. You can rotate this before placing it. Do so by hitting space.
+
+<P>Dumbfounding:  Being dumbfounded reduces the number of spells you can cast. Being a little dumbfounded prevents you from casting high level spells. The more dumbfounded you are, the more spells you lose access to. The priest spell Restore Mind, healers, and certain magic items can undo the effects of dumbfounding. 
+
+<P><B>9.3 Magical Walls and Barriers
+</B>
+<P>Both you and your foes have the capability to create a wide variety of magical fields and barriers, each with different effects and durations.
+<P>There are fire, force, ice, and blade walls, which damage anyone entering and fade with time. There are stinking clouds, which curse anyone entering and fade quickly, sleep clouds, which make beings fall asleep, and antimagic clouds, which prevent any spell casting or targeting inside them, and fade slowly.
+<P>Webs cover anyone entering with goo, which slows the victim down. Pausing cleans off the goo.
+
+<P>Quickfire:  The rarest and most deadly of the magical fields is quickfire. Once quickfire is created, it begins to spread, expanding until it fills the entire dungeon! Antimagic clouds slow it down, and dispel fields spells can hinder its progress, but once quickfire is loose, running is your only real option.
+<P>When a dungeon is overcome with quickfire, leave and return later. The flames will have died down.
+
+<P>Fire and Force Barriers:  These barriers last until they are dispelled. The former damages anyone entering, and the latter prevents anyone from entering at all.
+
+<P><B>9.4 Summoned Monsters
+</B>
+<P>Both you and your foes can magically bring forth creatures to aid you. These summoned monsters fight for a short time, and then disappear. If killed, they leave no treasure.
+<P>The most (potentially) powerful summoning spells are Capture Soul and Simulacrum. Should you obtain a Soul Crystal, casting Capture Soul on a monster stores a copy of it. Later, you can cast Simulacrum to bring a copy of the monster forth. Collect copies of the most powerful monsters and bring them to your aid! A Soul Crystal can hold 4 monsters.
+<P>Beware - when you Capture Soul a monster, its copy is stored in a random slot in the Soul Crystal. It may copy over a monster you already have.  
+
+<h3><a name="mage">Section 10: Mage Spells:</a></h3>
+<P>      These are the spells available to your mages. A character starts with most of the first three levels of spells automatically. The higher level spells must be found or bought.
+<P>      PCs can cast spells on other PCs regardless of the distance between them. Hostile spells, on the other hand, can only affect monsters sufficiently nearby. The number in parenthesis after the name is the cost of the spell in spell points. When there is an R and a number, the second number is the range for the spell.
+
+<P><B>Level 1:
+</B><P>Light:  (C 1) Creates a weak light.
+<P>Spark:  (C 1, R 6) Fires a weak bolt of electricity at an enemy.
+<P>Minor Haste: (C 1)  Makes the selected PC move faster for a while. All haste spells take effect at the beginning of the next round.
+<P>Strength:  (C 1)  Makes the selected PC more skilled for a short time. Works like the priest spell 'Bless.'
+<P>Scare:  (C 1, R 6)  Decreases the morale of the victim. Casting this on a weak foe will make the foe flee. Even if the monster doesn't flee, later castings have a higher chance of success.
+<P>Flame Cloud:  (C 2, R 7)  This spell fills the selected space with a short-lasting wall of fire.
+<P>Identify:  (C 15)  This draining spell makes all of your parties unidentified items identified.
+<P>Scry Monster:  (C 2, R 14)  When cast, you receive information about the monster you target: current health, spell points, etc. In addition, this monster will now appear on your Monster Info menu.
+<P>Goo: (C 1, R 8) This spell covers the target with sticky goo, slowing it down and interfering  with its attacks.
+<P>True Sight: (C 3)  This spell lets you see everything in a short radius around you, even spaces blocked off by walls. It's useful for finding secret passages, for example.
+
+<P><B>Level 2:
+</B><P>Minor Poison:  (C 2, R 6) Poisons the target creature. This does a fair amount of damage, but it takes time to happen.
+<P>Flame:  (C 3, R 8)  Fires a decent-sized bolt of flame at the target. The damage done increases with the level of the caster.
+<P>Slow:  (C 2, R 7)  Makes the victim get half its usual number of actions for a while.
+<P>Dumbfound:  (C 2, R 10)   Makes the victim incompetent: easier to hit, easier to damage, and less able to attack you.
+<P>Envenom:  (C 2)  This spell puts poison on the weapon of the selected PC, with no chance of failure or accidental poisoning.
+<P>Stinking Cloud:  (C 2, R 8)  When cast, a 3x3 area you select becomes filled with choking gasses. Anyone entering will be cursed. The gas will slowly fade on its own.
+<P>Summon Beast: (C 4)  This spell summons one low-level non-magical monster to fight on your side. It disappears after a short time.
+<P>Conflagration:  (C 4, R 8) This spell makes the air in a radius 2 circle burst into flames, charring anyone inside the cloud. After creation, the cloud will rapidly fade.
+<P>Dispel Field:  (C 2, R 10) This spell erases a magical field in a target space. It does not work on certain powerful sorts of field.
+<P>Sleep Cloud: (C 6)  This spell creates a small sleep field around the target space.
+
+<P><B>Level 3:
+</B><P>Unlock: (C 3)   Some doors are magically locked, and others are just hard to open. This spell will crack them. However, it isn't guaranteed to succeed, and won't work on all doors.
+<P>Haste:  (C 3)  Makes the selected PC get twice the usual number of actions for a long time.
+<P>Fireball:  (C 5, R 12)  Fires a powerful ball of flame, which affects 
+<P>the target space and every space adjacent. The damage done increases with the level of the caster.
+<P>Long Light:  (C 3)  Like the first level light spell, but much more effective.
+<P>Fear:  (C 3, R 10)  Like scare, but much more powerful.
+<P>Wall of Force:  (C 5, R 12)  This powerful spell creates a line of force walls, which are like fire walls but more damaging and lasting. Hitting space while targeting this spell makes the wall rotate.
+<P>Weak Summoning: (C 6, R 4)  When cast, a group of monsters appears and attacks all enemies of the caster. The number of monsters depends on the level of the caster. After a time, they disappear.
+<P>Flame Arrows:  (C 4, R 10)  This spell is like flame, but the caster gets to select several targets. The number of missiles increases with the level of the caster. If you don't want to use all the missiles, hit space to cast the spell.
+<P>Web:  (C 6, R 8) This spell covers a large circle with icky webs, slowing down everyone inside. The webs last until torn down.
+<P>Resist Magic: (C 4)  You can cast this spell on another PC to make him/her resistant to magical damage and effects. Note this does not help against damage from fire and cold.
+
+<P><B>Level 4:
+</B><P>Poison:  (C 4, R 8)  This makes poison run thick in the veins of the target. Repeated castings will have a devastating effect.
+<P>Ice Bolt:  (C 5, R 12)  Slams the target with a heavy, pointed bolt of ice. Effective against monsters who are resistant to fire. Damage increases as level of caster increases.
+<P>Slow Group:  (C 4, R 12)  Makes all monsters within a 12 space radius move at half speed for a time.
+<P>Magic Map:  (C 8)  This powerful spell gives you a vision of the entire level. Your map will show you the entire area. However, to cast this spell requires a sapphire.
+<P>Capture Soul:  (C 30, R 10) You need a Soul Crystal to cast this. When you cast it on a monster, you attempt to store a copy of it in your Soul Crystal, so you can later recreate it with the simulacrum spell. The stronger the monster, the lower the chance of success.
+<P>Simulacrum:  (C ?)  This spell summons a monster you select from your Soul Crystal. The cost depends on the level of the monster being summoned.
+<P>Venom Arrows:  (C 8, R 8) This spell is similar to Flame Arrows, except that your targets become poisoned.
+<P>Wall of Ice: (C 6, R 8)  This spell is similar to Wall of Force, except that it creates an ice wall. Ice walls do as much damage as force walls, but last a lot longer.
+
+<P><B>Level 5:
+</B><P>Stealth: (C 5)   This powerful spell makes monsters less likely to see you for a time which depends on your level. Try casting it before walking through a room crowded with monsters.
+<P>Major Haste: (C 8)   Gives the entire party double the actions for a time depending on the level of the caster.
+<P>Fire Storm:  (C 8, R 14)  This spell is like fireball, but does more damage, and affects all creatures within two spaces of the space you target. Be careful not to fry your party!
+<P>Dispel Barrier:  (C 6)  In some towns, you will find magical barriers blocking you from certain areas. This spell will remove them. The 
+<P>chance of success starts low, but improves with the caster's level. Some barriers are harder to dispel than others, some cannot be dispelled, and it is rumored some barriers can be walked through.
+<P>Fire Barrier:  (C 9) This spell creates a single fire barrier at the target space. Fire barriers are damaging and permanent.
+<P>Summoning:  (C 10) This spell is like Minor Summoning, but summons more powerful monsters.
+<P>Shockstorm: (C 6, R 10) This spell creates a large sphere of force walls.
+<P>Spray Fields: (C 6, R 12) This spell creates a large number of small fields of a random sort, each of which may be individually targeted. The number of fields increases with the level of the caster.
+
+<P><B>Level 6:
+</B><P>Major Poison:  (C 7, R 8)  This spell makes the targeted monster very poisoned. This spell does a lot of damage, but it takes time to take effect.
+<P>Group Fear:  (C 6, R 12)  When cast, the caster begins to radiate a horrible aura of fear. All monsters within 12 spaces lose a lot of morale. This spell gains effectiveness rapidly with the level of the caster.
+<P>Kill:  (C 8, R 6)  The deadly Kill spell deals a devastating blow to one target you select.
+<P>Paralyze: (C 7, R 8)  This spell has a chance of paralyzing the target. Paralysis lasts for a very long time.
+<P>Daemon:  (C 12)  This dangerous spell summons a beast from the netherworld to fight at your side.
+<P>Antimagic Cloud: (C 10)   This spell creates a spherical field, from which no spells may be cast and in which no spells may be targeted. After creation, it slowly fades.
+<P>Mindduel:  (C 12)  When cast on a magic using enemy, the two creatures get in a mental battle, absorbing spell points from each other. The loser may end up dumbfounded or killed. Requires a Smoky Crystal to cast.
+<P>Flight:  (C 20)  When cast outdoors, the party can fly for a short time.
+
+<P><B>Level 7:
+</B><P>Shockwave:  (C 12)  A dangerous spell. It sends a wave of force out from the caster, damaging everyone  nearby--monsters and PCs. The farther someone is from the caster, the more damage is taken, out to a radius of 10. Don't cast this spell in towns.
+<P>Major Blessing:  (C 8)  When cast, the entire party is blessed and hasted, and has their weapons mildly poisoned.
+<P>Mass Paralysis: (C 20, R 8)  This spell has a chance of paralyzing any foes within 8 spaces of the caster. Very dangerous.
+<P>Protection:  (C 10)  One of the most powerful spells in the mage's repertoire. It makes the whole party temporarily magic resistant, and makes one PC you select immune to ALL damage for a short time.
+<P>Major Summoning: (C 14)  This spell works like Summoning, but brings forth much more powerful creatures.
+<P>Force Barrier: (C 10)  This spell creates an impenetrable, permanent barrier. Be careful not to trap yourself.
+<P>Quickfire: (C 50)   Devastating beyond words, this spell creates a space of quickfire, which will sweep over the area killing everyone and everything.
+<P>Death Arrows: (C 10, R 6) This spell is like the previous Arrow spells, but strikes each target with a kill spell. The number of arrows increases with the level of the caster.
+
+<h3><a name="priest">Section 11: Priest Spells:</a></h3>
+<P>As with mage spells, all PCs start with the first three levels of priest spells, and some only work within a certain range.
+
+<P><B>Level 1:
+</B><P>Minor Bless: (C 1)   Makes the character harder to hit and take less damage from blows. It also makes the PC hit more often, and his or her blows do more damage. Its effects decay with time.
+<P>Minor Heal: (C 1)   Increases the health of the selected PC a small amount, up to the PCs maximum health.
+<P>Weaken Poison: (C 1)    Reduces the amount of poison running around in the veins of the selected PC.
+<P>Turn Undead:  (C 2, R 8)  When cast on an undead creature, it usually does a reasonable amount of damage to it. It has no effect on non-undead.
+<P>Location:  (C 1)  Returns the party's x-y location in the town or outdoors.
+<P>Sanctuary:  (C 1) The target of this spell becomes magically shielded. 
+<P>For a time, monsters probably won't be able to attack him/her. The effects disappears when the PC attacks someone.
+<P>Symbiosis: (C 3)  This spell has the caster absorb the damage taken by another character. The higher the caster's level, the less damage the caster takes per health point healed.
+<P>Minor Manna:  (C 5)  Casting this spell gives the party a little more food.
+<P>Ritual - Sanctify:  (C 50) When cast on a location filled with evil magic, the location receives a blessing. This might drive out the evil magic. Then again, it might not.
+<P>Stumble:  (C 1)  The victim of this spell moves slower and has worse attacks for a short time.
+
+<P><B>Level 2:
+</B><P>Bless:  (C 2)  Like Minor Bless, but better. Its effect increases with the level of the caster.
+<P>Cure Poison:  (C 2)  Like Weaken Poison, but better. Its effect increases with the level of the caster.
+<P>Curse:  (C 2, R 10) The opposite of bless. It makes everything work much worse for the victim, for a time.
+<P>Light:  (C 2)  Gives a short, reasonable quality magical light source.
+<P>Wound:  (C 3, R 5)  Deals a painful blow to the targeted victim. The damage increases with your level.
+<P>Summon Spirit:  (C 5) This spell summons a shade from the netherworld to aid you. It will disappear after a short time.
+<P>Move Mountains:  (C 8) When cast on a fragile wall or outcropping of rock, the wall or outcropping crumbles into rubble. It doesn't work on all walls.
+<P>Charm Foe: (C 6, R 6) This spell has a chance of making the target monster start to fight for the party. The chance of it working drops sharply with the level of the monster.
+<P>Disease:  (C 4)  The victim of this spell is afflicted by a disease, which slowly weakens it. The disease lasts a long time.
+<P>Awaken:  (C 2)  Casting this on a character immediately wakes him/her up. 
+
+<P><B>Level 3:
+</B><P>Heal:  (C 3)  A much better version of Minor Heal.
+<P>Minor Heal All: (C 4)   Casts one minor heal on each PC.
+<P>Holy Scourge:  (C 3, R 8)  This spell gives the victim a powerful curse, the effect of which increases with the level of the caster.
+<P>Detect Life:  (C 3)  This spell causes all other living things to appear on your map for a short time. Note, however, that this spell only detects creatures in areas you have explored.
+<P>Cure Paralysis:  (C 3)   This spell revives a paralyzed character. 
+<P>Manna:  (C 10)  This spell magically creates a lot of food for the party.
+<P>Forcefield:  (C 5, R 8) This spell fills an area with walls of force,  which are fairly damaging and reasonably long lasting.
+<P>Cure Disease:  (C 3)  Casting this spell cures a PC's disease.
+<P>Restore Mind:  (C 4) This spell completely undumbfounds the recipient.
+<P>Smite: (C 6, R 8) This spell fires a number of bolts of divinely inspired cold, the number of which increases with the level of the caster. To cast without using all the targets, hit the space bar.
+
+<P><B>Level 4:
+</B><P>Cure All Poison:  (C 5)   Causes everyone to become less poisoned. Useful for dealing with those nasty swamps.
+<P>Curse All:  (C 5, R 10)  Causes all monsters within ten spaces to receive a powerful curse.
+<P>Dispel Undead:  (C 5, R 8)  Deals a deadly blow to the targeted undead nasty. Chance of having effect increases with level.
+<P>Remove Curse:   (C 15)  Occasionally, you will put on an item which then refuses to be taken off. Casting this spell has a chance of removing the curse.
+<P>Sticks to Snakes: (C 6)   This spell summons a bunch of snakes to aid the party. Skillful casters have a chance of getting asps instead of the weaker giant snakes.
+<P>Martyr's Shield: (C 5)  When something strikes the recipient of this spell in hand-to-hand combat, it takes as much damage as the victim. The duration of this spell increases with the level of the caster.
+<P>Cleanse: (C 5)  This spell purifies the recipient. The beneficiary is completely unwebbed, and all disease is cured.
+<P>Firewalk: (C 8)  When cast, for a short time everyone in the party can walk across lava with no damage. The duration increases slowly with the level of the caster.
+
+<P><B>Level 5:
+</B><P>Bless Party:  (C 6)  Much like Bless, but affects everyone.
+<P>Major Heal:  (C 7)  Works like the Heal spell, but gives much more bang for the spell points.
+<P>Raise Dead:  (C 25)  This spell returns a dead character to life. However, you need to have Resurrection Balm for the spell to work, and there is a small chance (decreasing with your level) that it turns the corpse to dust. A dusted character can only be revived with a Resurrect spell.
+<P>Flamestrike:  (C 8, R 9)  The first good offensive priest spell. It chars all beings adjacent to the space you target. The damage done increases with level.
+<P>Mass Sanctuary: (C 10)  This spell hides all PCs (like a sanctuary spell). As before, the effect for a PC is voided when that PC attacks.
+<P>Summon Host: (C 12)  This powerful spell summons four spirits, and a magical being to lead them. They then fight on the side of the caster for a little while. 
+<P>Shatter: (C 12)  This spell strikes every space adjacent to the party with a Move Mountains spell.
+<P>Dispel Fields: (C 6)  All magical walls, etc. in the large area affected by this spell will be dispelled. It has a small chance of affecting quickfire.
+
+<P><B>Level 6:
+</B><P>Heal All: (C 8)   Like the Heal spell, but affects the whole party. Very efficient.
+<P>Revive:  (C 7)  This heals all damage and cures all poison for a PC.
+<P>Hyperactivity: (C 8)   This spell wakes up all PCs, and provides a small amount of magical protection from sleeping.
+<P>Destone: (C 8)   Certain rare monsters can turn one of your characters to stone. This valuable spell undoes the damage.
+<P>Summon Guardian: (C 14)  This spell summons a powerful, invisible being to fight on the side of the party. Be careful not to damage it by mistake!
+<P>Mass Charm: (C 17)  When cast, all creatures within eight spaces of the caster have a chance of coming under his/her control.
+<P>Protective Circle: (C 8)  A very unusual and effective spell for a party on the defensive. The caster is surrounded by several layers of magical fields, which fend off anyone attacking.
+<P>Pestilence: (C 7)  This spell afflicts everyone within eight spaces with an effective but slow-acting disease.
+
+<P><B>Level 7:
+</B><P>Revive All: (C 10)   When cast, the party receives a powerful healing (increasing with level of the caster) and has poison cured as well.
+<P>Ravage Spirit:  (C 10, R 4) Demons have a nasty tendency to resist any  spells you throw at them.  This spell gives them a blow which, most of the time, does a lot of damage. The chance of success increases with the level of the caster.
+<P>Resurrect:  (C 35)  Like raise dead, but much more effective, and works on even a dusted character. It still requires Resurrection Balm to cast.
+<P>Divine Thud:  (C 10, R 12)  The most powerful offensive priest spell. It delivers a stunning blow of force to all beings within two spaces of the targeted space.
+<P>Avatar: (C 12)  This spell temporarily makes the caster an invulnerable, incredibly powerful avatar of the gods. 
+<P>Wall of Blades: (C 12, R 10) This spell creates a wall of the most damaging (and long lasting) of the magic walls. Rotate the wall by hitting space.
+<P>Word of Recall:  (C 30) This spell returns the party to Fort Emergence, where you began the game. Because of the danger of teleporting from narrow, windy tunnels, it can only be cast outdoors.
+<P>Major Cleansing: (C 10)  This spell removes all webs and disease from the party.
+<h3><a name="editor">Section 12: The Exile III Editor</a></h3>
+<P><B>Section 12.1: What is the Exile III Editor
+</B>
+<P>     This copy of Exile III comes with the Exile III Character Editor, a simple utility for improving your Exile III party in a mind-boggling variety of ways. 
+<P>     The unregistered (i.e. as is) version of the editor can give you unlimited gold and food, heal your party, and do several other useful things (go to the section on menus, and read about the Free Extras menu). The registered version can do much more - give you all sorts of items, complete your quests and give you maps, add as much experience and skill as you want, and more. 
+<P>     The Exile III Editor is $9 shareware, and can be registered using the same order form you use to register Exile III.
+
+<P><B>Section 12.2: Using the Editor
+</B>
+<P><B>12.2.1 - How to use the editor.
+</B>
+<P>     The Exile III editor is very easy to use. To do so,
+<P>1. Run it.
+<P>2. Select Restore from the File menu.
+<P>3. Select the save file to edit.
+<P>4. Make the changes.
+<P>5. Select Save from the File menu.
+
+<P>     To make a change, press one of the other buttons. Their uses are described in the next five chapters. Note, however, if you, in an unregistered copy, selecting any option not in the Free Extras menu prevents you from saving that party.
+
+<P><B>12.2.2 - A Serious Warning
+</B>
+<P>     The Exile III Editor is a powerful utility, and, as has been said, "With great power comes great responsibility." It is not only possible, but in fact quite easy to use the editor to make the game unwinnable. All you need to do is dispose of the wrong item, or rub away the memory of the wrong piece of information. The editor can also correct the damage, of course. But as a rule of thumb, it is best to 
+<P>   1. Be careful, 
+<P>   2. ALWAYS keep an unaltered back-up save file, and
+<P>   3. Only do positive things with the editor. It's generally safe to give yourself new information or a new item, but very risky to take things away.
+
+<P><B>12.2.3 - Using the Main Screen
+</B>
+<P>Once you've opened a save file, you'll see your party displayed on the main screen. One character's name will be in red. This is the active character. Click on another character to make him/her active.
+<P>To the right is the active character's inventory. To drop an item, click the 'D' button. To identify an item, click the 'I' button.
+<P>There isn't much to do on the main screen. Most of the editor's features are accessed through the menus.
+
+<P><B>Section 12.3: The Exile III Editor Menu
+</B>
+<P>Most of the Exile III Editor's features are activated through the menus.
+
+<P><B>File Menu:
+</B><P>Save - Records the changes you've made. If the editor is unregistered and you've used features not in the Free Extras menu, this won't work.
+<P>Load Party - Reads one of your save files in for editing.
+<P>Quit - When you're ready to get back to business.
+
+<P><B>Registration:
+</B><P>Registration Info - Tells how to register and give the registration code you need to provide when you register.
+<P>Register This Copy - When you've registered, select this option and input your key to register the editor.
+
+<P><B>Free Extras: </B> (All the stuff you can use without paying.)
+<P>Edit Gold, Editor Food:  When selected, you will be allowed to set how much gold or food your party has.
+<P>Leave Town - Should you become trapped in a town, say by a horde of guards between you and the exit, selecting this option moves your party to the dungeon entrance. Things you did in the dungeon will not be recorded, and your maps will not be saved. Stuff you got will remain yours.
+<P>Reunite Party - Sometimes your party gets split up in dungeons. Selecting this option reunites them.
+<P>Return Party To Start - You can only use this option on a save file for a party that is outdoors and not in a boat. It takesyour party and returns it to just outside Fort Emergence. Beware - if doing this leaves boats where you cannot get at them or past them, you can very easily make your game unwinnable.
+<P>Reset Boats and Horses - All boats and horses will return to their original positions. Be careful not to strand yourself!
+<P>Make Towns Forget You - Only use this outside town (use Leave Towns first). Any towns that were angry at you will forget about it. Any monsters slain in the dungeons will return to life. This does not affect the people of Shayder's anger if you rob the Anama temple.
+<P>Slow down Tower of Magi Timer - When the Tower of Magi is in trouble, selecting this gives you more time to solve the problem. Note that this may cause some warning messages to play again.
+<P>Heal Damage, Restore Spell Points - These restore your characters to full health and energy.
+<P>Cure Dead, Stoning, etc. - All Dead, Dust, and Stoned characters will be restored to life.
+<P>Remove Bad Conditions - All nasty conditions (e.g. disease, dumbfound) will be cured.
+
+<P><B>Edit Party: </B> (Editor must be registered)
+<P>Add Special Items -  This brings up a window from which you can give your party special items and maps, and complete their quests for them. The things you can do are described in a later section.
+<P>Add Alchemy -  This brings up a menu from which you can add and delete knowledge of alchemical recipes. Click on the light by a recipe to add it. Click again to delete it.
+<P>Own all Boats/Horses - All boats and horses will become your property.
+<P>Edit PC's Mage Spells, Edit PC's Priest Spells - This allows you to add or remove the active PC's spells. Click on a PCs name to make him/her active. 
+<P>Edit PC's Skills:  This allows you to change the active character's skills however you want. It's like training, but you don't have to pay for it.
+<P>Edit PC's Traits:  This allows you to change the active PCs race, and to change his/her advantages and disadvantages as well. Click on the light to the right of a trait to add/drop it. Note that adding an advantage does not make you immune to the effects of having that trait on your rate of gaining levels.
+<P>Edit Day - This lets you set the current day. Be careful using this - it can have very peculiar effects.
+
+<P><B>Item 1, Item 2, Item 3, Item 4:</B>  (Editor must be registered)
+<P>These menus list all the items in Exile III. Select an item to have it added to the inventory of the active PC.
+
+<P><B>Section 12.4 - Special Items
+</B>
+<P>From the Add Special Items window, you can add or delete all of the special items you go to so much trouble to find while travelling through Exile. Many of these will have somewhat unclear uses - the place where you use these items will be listed below. Be careful - take something important away, and you probably won't be able to finish the game. 
+
+<P>What the items are for:
+<P>The maps - Each map depicts a different area of Valorim or Upper Exile.
+<P>Orb of Thralni - This enables you to fly.
+<P>Amulet of Rapid Returning - This returns you to Fort Emergence.
+<P>Wand of Unusual Results - This is unpredictable and not very useful.
+<P>Twisted Steel Key, Twisted Gold Key - Used in Keep of Tinraya.
+<P>Giant's Key - Used in  Guhkbar's Pit.
+<P>Stone Key - Used in the Cult of the Sacred Item.
+<P>Key to Hawke's Manse - Used in Lorelei to enter Hawke's Manse.
+<P>Silver Key - Used in Monastery of Madness.
+<P>Large Iron Key - Used in Cavern of Giants.
+<P>Vahnatai Crypt Key - Used in Defiled Crypt.
+<P>Electrum Key - Used in the city of Gale. It will let you into the library there.
+<P>Scroll From Prazac, Scroll From Anaximander - These are taken from and to Blackcrag Fortress.
+<P>Soul Crystal - Used to cast Capture Soul and Simulacrum.
+<P>Drawing of Rune, Withered Scales, Crystal Shards, Hot Crystal Shards - These are bits of evidence found in the big monster lairs. Take them to Berra in Fort Emergence.
+<P>Silver Runed Amulet - Take to Denise, a mage in the Portal Fortress.
+<P>Crystal Statue - Used for mission in Ghikra.
+<P>Cooling Amulets - Get in Bunker. Used against Erika.
+<P>Thought Crystal - Get in Bunker. Used against Vahnatai.
+<P>Book on Teleportation - Used for mission in Golddale
+<P>Blessed Athame - Used for mission in Tower of Magi.
+<P>Erika's Amulet - This amulet summons help from Erika. It needs to be activated by her to be useful.
+<P>Metal Lumps - These are actually mithral, a valuable metal, used in the Cave of Sulfras, Lennus, and the Inn of Blades.
+<P>Egg of the Phoenix - Used to destroy Filth Factory.
+<P>Anama Rings - Mark you as member of Anama. You don't need to be Anama to wear them.
+<P>Suspicious Package - Used for mission in Lorelei.
+<P>Scroll of Passage - Given to you by Mayor Knight of Sharimik to be taken to Castle Troglo.
+<P>Sharimik Ring - Used for mission in Sharimik.
+<P>Troglodyte Message - Given to you by Vothkaro, king of the troglodytes, to return to Mayor Knight of Sharimik.
+<P>Silver Ring - Used for mission in Malloc.
+<P>Love Letter, Good Luck Charm, Embroidered Favor, Locket With Painting - Used for mission in Lorelei.
+<P>General Baziron Message - Used for mission in Tevrono.
+
+<P>Map buttons - 
+<P>Pressing these buttons makes your automap display the full maps for the relevant areas. These only work if you didn't turn on Don't Save Maps in the Preferences window in the game.
+
+<P>Other buttons - 
+<P>Raise Special NPCs From Dead - If you killed Erika or any dragons, they will now be alive again.
+<P>Become Member of Anama Church - You will now be in the Anama. You will be penalized if you buy any mage spells or train in Mage Spells skill.
+<P>Activate Erika Amulets - If you have Erika amulets, this will make them start working.
+<P>Make Job Dispatchers Forgive You - If you were late doing a job, that dispatcher will forgive you and give you jobs again.
+<P>Reset Shayder, Quit Anama - You will no longer be in the Anama. If you robbed their temple, Shayder will no longer be mad at you.
+<P>End curse of Vahkohs - If you killed the vampire Vahkohs but didn't destroy his soul, you get cursed. This cures the curse.
+<P>Cure Skribbane Addiction - If you took a lot of Skribbane in Gale, this will heal the negative effects of it.
+<P>Make All Towns Visible - This enables you to locate and enter all towns. Be careful - you may not be ready to enter all of them yet.
+
+<h3><a name="credits">Section 13: Credits</a></h3>
+<P><B>Concept, Design, and Programming: </B>Jeff Vogel (SpidWeb@spidweb.com)
+<P><B>Graphics:</B> Andrew Hunter (Wormius@aol.com)
+<P><B>Opening Screen Graphic:</B> Nohl Lyons (Nohl@aol.com)
+<P><B>Linux Port:</B> Thomas Boutell (boutell@boutell.com),
+thanks to the <a href="http://www.willows.com/">TWIN library</a>
+
+<P><B>Beta Testing (Macintosh):</B>  Sean Aldous, Lissa Altair, Donald Burke, MD, Finbar Foley, Lane Foulk, Bill Greentree, Don Henson, C. Hiller, Ion Bond, Jeremy Julien, Jim Klemme, Michael Love, Bill Millard, Wesley "Rogue" Miaw, Leif (ire ma) Olson-Watson, Erik "van Hengel" Rynearson, Edward Spencer, Christopher Tucker, Jake Wallace.
+<P><B>Beta Testing (Windows): </B>Karl Anderson, Damon Duchai, Ellie &amp; Condor, Robert W. Gibson, Ted Hult, Craig. H Parker, Jim Pedicord, Jessie Shoop, Shane Skidgel, Dave "Rasputin" Wilson
+
+<P> Common questions regarding the Linux port: <P>
+
+<P> Why is this game not open source? <P>
+
+<P> While we have nothing but respect for the open source movement and all it stands for, Exile III just didn't seem to us to be well suited to open source development at this late point. It was, basically, a completely finished product, and so not much in the way of outside code/feedback was needed. Also, it is a sad fact of computer game development that if a game product is released without some sort of shareware barrier, it won't sell. Sadly, we need to eat, too.
+
+<P> Why is this game a TWIN port instead of a native Linux application? <P>
+
+<P> When we started this project, we had no idea how it was going to do. We were afraid it might be a big risk, so we chose the path that seemed likely to give us the highest quality project in the shortest amount of time. Cynical, perhaps, but necessary. If Exile III does well, we are looking hard at doing native Linux ports of our other games. Also, there is a lot of native Linux code in this port, and we found that performance hits weren't a big issue.<P>
+
+
+<P><B>Thanks to:
+</B>
+<P>Mariann Krizsan - For tolerating my neurosis.
+
+<P> Tom Boutell - For undertaking the gruesome task of porting this game to Linux.
+
+<P>Shirley Monroe - For invaluable support early on.
+
+<P>My Beta Testers - For working so hard for so long.
+
+<P>Craig Kilborn - Host of the Daily Show, on Comedy Central, for caring about me personally.
+
+<P>Jennifer Saunders, Irvine Welsh - For providing valuable role models.
+
+<P>Inspirational Music - In particular, Indigo Girls, Green Day, the Cast Album of Rent, They Might be Giants, Tori Amos, Everclear.
+
+<P>Inspirational Books - The Diamond Age, by Neal Stephenson, A Civil Action, by Jonathan Harr, Infinite Jest, by David Foster Wallace (all 1000+ pages of it).
+
+<P>A final note on the eternal need to propitiate the Gods with frequent sacrifices:
+
+<P>On Sunday, January 5, 1997, at around 3 AM, while putting the final touches on Exile III: Ruined World v1.0 for Macintosh, Comedy Central, my constant, unconditionally loving companion during the previous years of development, was suddenly dropped from my cable lineup. In desperation, I turned to MTV. It immediately started playing the video for that intensely annoying "The roof is on fire" song. This combination of events was taken by me as very bad Mojo indeed.
+
+<P>So. If Exile III sucks, crashes frequently, or causes your computer to self destruct amidst thick clouds of greasy black smoke, please don't blame me personally. It's bad karma. That's all.
+
+<P>- Jeff Vogel
+<P>Spiderweb Software, Inc.
+<P>Seattle, WA 1997
+<h3><a name="twin">TWIN GNU Library Public License Information</a></h3>
+The Linux version of Exile III takes advantage
+of the <a href="http://www.willows.com/">Willows TWIN Library</a>,
+by Willows Software. In compliance with the
+<a href="http://www.boutell.com/mapedit/twinlicense.txt">GNU Library
+General Public License</a>, we are providing an
+<a href="ftp://ftp.boutell.com/pub/boutell/twin/">FTP site for
+those who wish to obtain the source code to the TWIN library.</a>
+The FTP site offers both the stock TWIN 3.1.13 release upon which
+our work is based and a patch file providing the changes and
+corrections we found necessary in order to make Exile III work properly.
+<strong>You don't need to download this extra software to use EXILE III.
+We provide it for interested parties only.</strong>
+<p>
+Since the TWIN library is provided with Exile III in shared library form,
+other versions of the TWIN library can be substituted, as required by the
+GLPL. However, please note that you will probably need the corrections and 
+changes in our patch file in your customized version of the library for
+best results.
+</BODY>
+</HTML>

@@ -1,0 +1,421 @@
+#!/usr/bin/perl
+
+print "Exile III Installation\n\n";
+
+print "This program will install Exile III.\n";
+print <<EOM
+
+USE OF THIS GAME IS BOUND BY THE TERMS AND CONDITIONS OF THE
+LICENSE AGREEMENT. Please read the file license.txt and make
+sure that you agree to these terms and conditions before 
+playing the game.
+
+EOM
+;
+
+print "Are you sure you want to install Exile III now? (Y/N): ";
+
+$choice = <>;
+chomp $choice;
+if ($choice !~ /^y/i) {
+	print "Exile III will not be installed.\n";
+	exit 1;
+}
+
+print "\n";
+
+$username = `whoami`;
+chomp $username;
+
+print "Logged in as: $username\n\n";
+
+if ($username eq "root") {
+	print "Since you are logged in as root, I will assume you want to\n";
+	print "install Exile III for general use by all accounts.\n";
+	print "Also, I will install the exile3-fullscreen option, which\n";
+	print "allows the game to be played full-screen at its intended\n";
+	print "screen resolution.\n\n";
+	$root = 1;
+} else {
+	print "Since you are not logged in as root, I will assume you want to\n";
+	print "install Exile III for personal use by this account only.\n";
+	print "Also, THE FULL-SCREEN OPTION WILL NOT BE AVAILABLE. If you\n";
+	print "want to play the game full-screen at its intended screen\n";
+	print "resolution, SWITCH TO YOUR ROOT ACCOUNT before running setup.\n\n";
+	print "Please note that you will NOT have to become root to play!\n";
+	print "Only once, before running setup.\n\n";
+}
+
+if ($root) {
+	$defaultpath = "/usr/local/exile3";
+} else {
+	if ($ENV{"HOME"} eq "") {
+		$defaultpath = "./exile3";
+	} else {
+		$defaultpath = $ENV{"HOME"} . "/exile3";
+	}
+}
+
+while (1) {
+	print "Where do you wish to install Exile III? The suggested path below\n";
+	print "is a reasonable choice. If you wish to accept this path, press\n";
+	print "return. Otherwise, enter your preferred location.\n";
+
+	print "Installation Path ( $defaultpath ): ";
+	$path = <>;
+	chomp $path;
+	if ($path eq "") {
+		$path = $defaultpath;
+	}
+	print "\n";
+	if (opendir(DIR, $path)) {
+		closedir(DIR);
+		print "$path already exists. ARE YOU SURE you want to install\n";
+		print "Exile III ON TOP OF whatever may currently exist in this\n";
+		print "directory?\n\n";
+		print "NOTE: it is OK to install on top of an existing Exile III game.\n";
+		print "You will not lose your save files. You should not install\n";
+		print "on top of an unrelated program.\n\n";
+		print "If you say no, you will be given an opportunity to enter an\n";
+		print "alternate location.\n\n";
+		print "Install Exile III on top of current directory contents? (Y/N): ";
+		$choice = <>;
+		chomp $choice;
+		if ($choice !~ /^y/i) {
+			next;
+		} else {
+			last;
+		}
+	}		 
+
+	print "Creating $path ...\n";
+	if (system("mkdir -p $path") != 0) {
+		print "Creation of $path failed. Enter a valid location for a\n";
+		print "new directory.\n\n";
+		next;
+	} else {
+		last;
+	}
+}
+
+print "Copying files to $path ...\n";
+
+system("cp *.so $path");
+system("cp *-binary $path");
+system("cp -rf exile3-fullscreen-* $path");
+system("cp exile3-fullscreen-binary $path");
+system("cp xbutton $path");
+system("cp exile3-icewm $path");
+system("cp *.bmp $path");
+system("cp *.dat $path");
+system("cp *.xbm $path");
+system("cp *.htm $path");
+system("cp *.txt $path");
+if ($root) {
+	system("chmod 755 $path");
+	system("chmod 644 $path/*");
+	system("chmod 755 $path/*-binary");
+	system("chmod 755 $path/exile3-icewm");
+	system("chmod 755 $path/xbutton");
+	system("chmod 755 $path/exile3-fullscreen-x-clients");
+	system("chmod 755 $path/*.so");
+	system("chmod -R a+r,a+X $path/exile3-fullscreen-icewm");
+	system("chown root $path/exile3-fullscreen-binary");
+	system("chmod +s $path/exile3-fullscreen-binary");
+}
+open(OUT, ">$path/exile3");
+print OUT "#!/bin/sh\n";
+print OUT "LD_LIBRARY_PATH=$path:/lib:/usr/lib:/usr/local/lib\n";
+print OUT "export LD_LIBRARY_PATH\n";
+print OUT "EXILE_PATH=$path\n";
+print OUT "export EXILE_PATH\n";
+print OUT "\$EXILE_PATH/exile3-binary $* > /dev/null 2>&1\n";
+close(OUT);
+if ($root) {
+	system("chmod 755 $path/exile3");
+} else {
+	system("chmod 700 $path/exile3");
+}
+if ($root) {
+	open(OUT, ">$path/exile3-fullscreen");
+	print OUT "#!/bin/sh\n";
+	print OUT "LD_LIBRARY_PATH=$path:/lib:/usr/lib:/usr/local/lib\n";
+	print OUT "export LD_LIBRARY_PATH\n";
+	print OUT "EXILE_PATH=$path\n";
+	print OUT "export EXILE_PATH\n";
+	print OUT "\$EXILE_PATH/exile3-fullscreen-binary $* > /dev/null 2>&1\n";
+	close(OUT);
+	system("chmod 755 $path/exile3-fullscreen");
+}
+open(OUT, ">$path/exile3ed");
+print OUT "#!/bin/sh\n";
+print OUT "LD_LIBRARY_PATH=$path:/lib:/usr/lib:/usr/local/lib\n";
+print OUT "export LD_LIBRARY_PATH\n";
+print OUT "EXILE_PATH=$path\n";
+print OUT "export EXILE_PATH\n";
+print OUT "\$EXILE_PATH/exile3ed-binary > /dev/null 2>&1\n";
+close(OUT);
+if ($root) {
+	system("chmod 755 $path/exile3");
+	system("chmod 755 $path/exile3ed");
+} else {
+	system("chmod 700 $path/exile3");
+	system("chmod 700 $path/exile3ed");
+}
+
+print "TO START EXILE III, execute the script: $path/exile3\n\n";
+print "For your convenience, a symbolic link to this script can be\n";
+print "installed in the following location:\n\n";
+
+if ($root) {
+	$script = "/usr/local/bin/exile3";
+} else {
+	if ($ENV{"HOME"} ne "") {
+		$script = "./exile3";
+	} else {
+		$script = $ENV{"HOME"} . "/exile3";
+	}
+}
+
+print "$script\n\n";
+
+print "Install symbolic link? (Y/N): ";
+$choice = <>;
+chomp $choice;
+if ($choice =~ /^y/i) {
+	if (system("ln -s $path/exile3 $script") != 0) {
+		print "The symbolic link was NOT successfully installed.\n";
+		print "Perhaps you have an old version of Exile III at that\n";
+		print "location. You may wish to examine that possibility\n";
+		print "and then make the link yourself with this command:\n\n";
+		print "ln -s $path/exile3 $script\n\n";
+	} else {
+		print "The symbolic link was correctly installed.\n";
+		print "PLEASE NOTE: if you use tcsh, you will need to type\n";
+		print "'rehash' before this program will be found\n";
+		print "automatically in your path. Of course, the program\n";
+		print "will only be found in your path if the directory\n";
+		print "$path is part of your path.\n\n";
+	}
+}
+
+if ($root) {
+	print "TO START EXILE III FULL-SCREEN, execute the program: $path/exile3-fullscreen\n\n";
+	print "For your convenience, a symbolic link to this program can be\n";
+	print "installed in the following location:\n\n";
+
+	$script = "/usr/local/bin/exile3-fullscreen";
+
+	print "$script\n\n";
+
+	print "Install symbolic link? (Y/N): ";
+	$choice = <>;
+	chomp $choice;
+	if ($choice =~ /^y/i) {
+		if (system("ln -s $path/exile3-fullscreen $script") != 0) {
+			print "The symbolic link was NOT successfully installed.\n";
+			print "Perhaps you have an old version of Exile III at that\n";
+			print "location. You may wish to examine that possibility\n";
+			print "and then make the link yourself with this command:\n\n";
+			print "ln -s $path/exile3-fullscreen $script\n\n";
+		} else {
+			print "The symbolic link was correctly installed.\n";
+			print "PLEASE NOTE: if you use tcsh, you will need to type\n";
+			print "'rehash' before this program will be found\n";
+			print "automatically in your path. Of course, the program\n";
+			print "will only be found in your path if the directory\n";
+			print "$path is part of your path.\n\n";
+		}
+	}
+}
+
+print "TO START THE CHARACTER EDITOR, execute the script: $path/exile3ed\n\n";
+
+print "For your convenience, a symbolic link to this script can be\n";
+print "installed in the following location:\n\n";
+
+if ($root) {
+	$script = "/usr/local/bin/exile3ed";
+} else {
+	if ($ENV{"HOME"} ne "") {
+		$script = "./exile3ed";
+	} else {
+		$script = $ENV{"HOME"} . "/exile3ed";
+	}
+}
+
+print "$script\n\n";
+
+print "Install symbolic link? (Y/N): ";
+$choice = <>;
+chomp $choice;
+if ($choice =~ /^y/i) {
+	if (system("ln -s $path/exile3ed $script") != 0) {
+		print "The symbolic link was NOT successfully installed.\n";
+		print "Perhaps you have an old version of Exile III at that\n";
+		print "location. You may wish to examine that possibility\n";
+		print "and then make the link yourself with this command:\n\n";
+		print "ln -s $path/exile3ed $script\n\n";
+	} else {
+		print "The symbolic link was correctly installed.\n";
+		print "PLEASE NOTE: if you use tcsh, you will need to type\n";
+		print "'rehash' before this program will be found\n";
+		print "automatically in your path. Of course, the program\n";
+		print "will only be found in your path if the directory\n";
+		print "$path is part of your path.\n\n";
+	}
+}
+
+if ($root) {
+	if (-e "/opt/kde/share/applnk/Games") {
+		# SUSE
+		$kdePath = "/opt/kde/share/applnk/Games";
+	} else {
+		# KDE
+		$kdePath = "/usr/share/applnk/Games";
+	}
+} else {
+	$kdePath = $ENV{"HOME"} . "/.kde/share/applnk";
+}
+
+if (-e $kdePath) {
+	print "For your convenience, Exile III can be added to the KDE\n";
+	print "window manager 'K' menu. This is a very convenient way to\n";
+	print "launch the program if you are using the K Desktop Environment.\n\n";
+	print "Add Exile III to the KDE window manager 'K' menu? (Y/N): ";
+	$choice = <>;
+	chomp $choice;
+	if ($choice =~ /^y/i) {
+		if (!open(OUT, ">$kdePath/exile3")) {
+			print "Sorry, the directory $kdePath could not be written to.\n";
+			print "You will still be able to play Exile III; it just\n";
+			print "won't appear on your 'K' menu.\n\n";
+		} else {
+			print OUT <<EOM
+# KDE Config File
+[KDE Desktop Entry]
+Comment[C]=
+SwallowExec=
+BinaryPattern=
+MiniIcon=
+Protocols=
+Name[C]=Exile III
+MimeType=
+Exec=$path/exile3
+Icon=$path/icon.xbm
+TerminalOptions=
+Path=
+Type=Application
+Terminal=0
+EOM
+;			
+			$kdeOK++;
+			close(OUT);
+			print "Exile III added to the 'K' menu.\n";
+		}
+		if ($root) {
+			if (!open(OUT, ">$kdePath/exile3-fullscreen")) {
+				print "Sorry, the directory $kdePath could not be written to.\n";
+				print "You will still be able to play Exile III; it just\n";
+				print "won't appear on your 'K' menu.\n\n";
+			} else {
+				print OUT <<EOM
+# KDE Config File
+[KDE Desktop Entry]
+Comment[C]=
+SwallowExec=
+BinaryPattern=
+MiniIcon=
+Protocols=
+Name[C]=Exile III Full-Screen
+MimeType=
+Exec=$path/exile3-fullscreen
+Icon=$path/icon.xbm
+TerminalOptions=
+Path=
+Type=Application
+Terminal=0
+EOM
+;			
+				$kdeOK++;
+				close(OUT);
+				print "Exile III Full-Screen added to the 'K' menu.\n";
+			}
+		}
+		if (!open(OUT, ">$kdePath/exile3ed")) {
+			print "Sorry, the directory $kdePath could not be written to.\n";
+			print "You will still be able to use the character editor; it just\n";
+			print "won't appear on your 'K' menu.\n\n";
+		} else {
+			print OUT <<EOM
+# KDE Config File
+[KDE Desktop Entry]
+Comment[C]=
+SwallowExec=
+BinaryPattern=
+MiniIcon=
+Protocols=
+Name[C]=Exile III Character Editor
+MimeType=
+Exec=$path/exile3ed
+Icon=$path/icon.xbm
+TerminalOptions=
+Path=
+Type=Application
+Terminal=0
+EOM
+;			
+			close(OUT);
+			$kdeOK++;
+			print "Exile III Character Editor added to the 'K' menu.\n";
+		}
+		if ($kdeOK) {
+			&kdePanelRestart;
+		}
+	}
+}
+
+print "Thank you for installing Exile III!\n\n";
+
+sub kdePanelRestart
+{
+	print "For your convenience, Exile III can restart the 'kpanel' and 'kfm' programs,\n";
+	print "causing the Exile III program to appear in your 'K' menu immediately.\n\n";
+	if ($root) {
+		print "Since you are running setup as root, this probably won't work, unless you\n";
+		print "happen to be logged into KDE as root. If it doesn't work, you can just\n";
+		print "restart kpanel manually by selecting K->Panel->Restart from the 'K' menu.\n\n";
+	}
+	print "Restart 'kpanel' and 'kfm'? (Y/N): ";
+	$choice = <>;
+	chomp $choice;
+	if ($choice =~ /^y/i) {
+		open(IN, "ps -auxw|");
+		while ($line = <IN>) {
+			if ($line =~ /(\w+)\s+(\d+).*\d+:\d+\s+\d+:\d+\s+((\S+\/|)(kpanel|kfm).*)\s*$/) {	
+				my($who, $pid, $command) = ($1, $2, $3);
+				if ($username eq $who) {
+					system("kill $pid");
+					system("$command &");
+					$found = 1;
+				}
+			}	
+		}
+		close(IN);
+		if ($found) {
+			if ($root) {
+				print "kpanel was restarted. Exile III should now appear under 'Games' in the\n";
+				print "'K' menu.\n";
+			} else {
+				print "kpanel was restarted. Exile III should now appear under 'Personal' in the\n";
+				print "'K' menu.\n";
+			}
+		} else {
+			print "kpanel was not found. If you are using the K Desktop Environment,\n";
+			print "Exile III should appear in the 'K' menu the next time you restart\n";
+			print "your X server, or by pulling down the 'K' menu now, picking 'Panel' and\n";
+			print "then selecting 'Restart'.\n";
+		}
+	}
+}
+

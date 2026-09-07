@@ -1,0 +1,13 @@
+#!/bin/sh
+xsetroot -solid black
+#Allow time for the switcher button to appear
+#without being hand-positioned 
+sleep 3
+#Launch a stripped-down window manager. For various reasons, most 
+#window managers are unsuitable due to bugs or wasted screen space.
+#icewm is the most suitable we have found.
+
+$EXILE_PATH/exile3-icewm &
+
+#Launch Exile
+$EXILE_PATH/exile3 -fullscreen -display :9

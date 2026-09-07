@@ -1,0 +1,16 @@
+[boot]
+display=:0.0
+windows=
+temp=/tmp
+openpath=
+
+[windows]
+fontface=helvetica
+
+[FontSubstitutes]
+Helv=helvetica
+Helvetica=helvetica
+System=helvetica
+MS Sans Serif=helvetica
+Arial=helvetica
+fixed=helvetica

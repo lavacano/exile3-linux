@@ -1,0 +1,7 @@
+# Logs & debug dumps
+*.log
+*.xwd
+
+# Save game files (keep directory)
+saves/*.sav
+!saves/.gitkeep
