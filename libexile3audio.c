@@ -445,10 +445,34 @@ static void get_font_info(Display *dpy, Font font_id, int *size, int *is_bold, i
 }
 
 static int x_error_trap = 0;
-static int (*orig_x_error_handler)(Display *, XErrorEvent *) = NULL;
+static XErrorHandler twin_saved_error_handler = NULL;
+
 static int trap_x_errors(Display *d, XErrorEvent *e) {
     x_error_trap = 1;
     return 0;
+}
+
+static int quiet_x_error_handler(Display *d, XErrorEvent *e) {
+    if (e && e->error_code == BadMatch) {
+        // Filter non-fatal BadMatch warnings from Willows Twin / Xephyr to keep console clean
+        return 0;
+    }
+    if (twin_saved_error_handler) {
+        return twin_saved_error_handler(d, e);
+    }
+    return 0;
+}
+
+XErrorHandler XSetErrorHandler(XErrorHandler handler) {
+    static XErrorHandler (*real_xseterrorhandler)(XErrorHandler) = NULL;
+    if (!real_xseterrorhandler) {
+        real_xseterrorhandler = (XErrorHandler (*)(XErrorHandler))dlsym(RTLD_NEXT, "XSetErrorHandler");
+    }
+    if (handler == trap_x_errors) {
+        return real_xseterrorhandler(trap_x_errors);
+    }
+    twin_saved_error_handler = handler;
+    return real_xseterrorhandler(quiet_x_error_handler);
 }
 
 static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length, int is_image_string) {
@@ -505,11 +529,11 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     int rx = 0, ry = 0;
     unsigned int win_w = 0, win_h = 0, border_w = 0, depth = 0;
     x_error_trap = 0;
-    orig_x_error_handler = XSetErrorHandler(trap_x_errors);
+    XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
     Status s = XGetGeometry(dpy, d, &root, &rx, &ry, &win_w, &win_h, &border_w, &depth);
-    XSync(dpy, False);
-    XSetErrorHandler(orig_x_error_handler);
-    if (!s || x_error_trap) {
+    if (!s || x_error_trap || depth < 24) {
+        XSync(dpy, False);
+        XSetErrorHandler(prev_handler);
         return -1;
     }
 
@@ -520,22 +544,24 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
 
     int bbox_w = max_x - min_x;
     int bbox_h = max_y - min_y;
-    if (bbox_w <= 0 || bbox_h <= 0) return 0;
-
-    x_error_trap = 0;
-    orig_x_error_handler = XSetErrorHandler(trap_x_errors);
+    if (bbox_w <= 0 || bbox_h <= 0) {
+        XSync(dpy, False);
+        XSetErrorHandler(prev_handler);
+        return 0;
+    }
 
     XImage *img = XGetImage(dpy, d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
-    XSync(dpy, False);
-    XSetErrorHandler(orig_x_error_handler);
-
     if (x_error_trap || !img) {
         if (img) XDestroyImage(img);
+        XSync(dpy, False);
+        XSetErrorHandler(prev_handler);
         return -1;
     }
 
     if (img->bits_per_pixel != 24 && img->bits_per_pixel != 32) {
         XDestroyImage(img);
+        XSync(dpy, False);
+        XSetErrorHandler(prev_handler);
         return -1;
     }
 
@@ -595,7 +621,9 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     }
 
     XPutImage(dpy, d, gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
+    XSync(dpy, False);
     XDestroyImage(img);
+    XSetErrorHandler(prev_handler);
     return 0;
 }
 
@@ -891,124 +919,108 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         unsigned int win_w = 0, win_h = 0, border_w = 0, depth = 0;
 
         x_error_trap = 0;
-        orig_x_error_handler = XSetErrorHandler(trap_x_errors);
+        XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
         Status s = XGetGeometry(dpy, win_d, &root, &rx, &ry, &win_w, &win_h, &border_w, &depth);
-        XSync(dpy, False);
-        XSetErrorHandler(orig_x_error_handler);
 
         if (s && !x_error_trap && depth >= 24) {
-            if (min_x < 0) min_x = 0;
-            if (min_y < 0) min_y = 0;
-            if (max_x > (int)win_w) max_x = (int)win_w;
-            if (max_y > (int)win_h) max_y = (int)win_h;
-            int bbox_w = max_x - min_x;
-            int bbox_h = max_y - min_y;
+            XWindowAttributes attr;
+            int is_input_only = 0;
+            if (XGetWindowAttributes(dpy, win_d, &attr)) {
+                if (attr.class == InputOnly) is_input_only = 1;
+            }
 
-            if (bbox_w > 0 && bbox_h > 0) {
-                struct timeval t0, t1;
-                gettimeofday(&t0, NULL);
+            if (!is_input_only && !x_error_trap) {
+                if (min_x < 0) min_x = 0;
+                if (min_y < 0) min_y = 0;
+                if (max_x > (int)win_w) max_x = (int)win_w;
+                if (max_y > (int)win_h) max_y = (int)win_h;
+                int bbox_w = max_x - min_x;
+                int bbox_h = max_y - min_y;
 
-                x_error_trap = 0;
-                orig_x_error_handler = XSetErrorHandler(trap_x_errors);
-                XImage *img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
-                XSync(dpy, False);
-                XSetErrorHandler(orig_x_error_handler);
+                if (bbox_w > 0 && bbox_h > 0) {
+                    GC local_gc = XCreateGC(dpy, win_d, 0, NULL);
+                    if (local_gc && !x_error_trap) {
+                        XImage *img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+                        if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
+                            if (bk_mode == 2) {
+                                unsigned long bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                int bx0 = dev_pen_x - min_x;
+                                int by0 = dev_y - min_y;
+                                int bx1 = bx0 + total_width;
+                                int by1 = by0 + font_height;
 
-                if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
-                    if (bk_mode == 2) {
-                        unsigned long bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
-                        int bx0 = dev_pen_x - min_x;
-                        int by0 = dev_y - min_y;
-                        int bx1 = bx0 + total_width;
-                        int by1 = by0 + font_height;
+                                if (bx0 < 0) bx0 = 0;
+                                if (by0 < 0) by0 = 0;
+                                if (bx1 > bbox_w) bx1 = bbox_w;
+                                if (by1 > bbox_h) by1 = bbox_h;
 
-                        if (bx0 < 0) bx0 = 0;
-                        if (by0 < 0) by0 = 0;
-                        if (bx1 > bbox_w) bx1 = bbox_w;
-                        if (by1 > bbox_h) by1 = bbox_h;
-
-                        for (int py = by0; py < by1; py++) {
-                            for (int px = bx0; px < bx1; px++) {
-                                XPutPixel(img, px, py, bk_pixel);
-                            }
-                        }
-                    }
-
-                    unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
-                    cur_x = dev_pen_x;
-
-                    for (int i = 0; i < length; i++) {
-                        unsigned char c = (unsigned char)string[i];
-                        CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
-                        if (!cg) continue;
-
-                        if (cg->buffer && cg->rows > 0 && cg->width > 0) {
-                            int gx0 = cur_x + cg->bitmap_left - min_x;
-                            int gy0 = dev_pen_y - cg->bitmap_top - min_y;
-
-                            for (int row = 0; row < cg->rows; row++) {
-                                int py = gy0 + row;
-                                if (py < 0 || py >= bbox_h) continue;
-                                unsigned char *src = cg->buffer + row * cg->pitch;
-
-                                for (int col = 0; col < cg->width; col++) {
-                                    unsigned int alpha = src[col];
-                                    if (alpha < 24) continue;
-
-                                    int px = gx0 + col;
-                                    if (px < 0 || px >= bbox_w) continue;
-
-                                    if (alpha >= 224) {
-                                        XPutPixel(img, px, py, fg_pixel);
-                                    } else {
-                                        unsigned long bg = XGetPixel(img, px, py);
-                                        unsigned int cur_bg_r = (bg >> 16) & 0xFF;
-                                        unsigned int cur_bg_g = (bg >> 8) & 0xFF;
-                                        unsigned int cur_bg_b = bg & 0xFF;
-
-                                        unsigned int out_r = (fg_r * alpha + cur_bg_r * (255 - alpha)) / 255;
-                                        unsigned int out_g = (fg_g * alpha + cur_bg_g * (255 - alpha)) / 255;
-                                        unsigned int out_b = (fg_b * alpha + cur_bg_b * (255 - alpha)) / 255;
-
-                                        XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
+                                for (int py = by0; py < by1; py++) {
+                                    for (int px = bx0; px < bx1; px++) {
+                                        XPutPixel(img, px, py, bk_pixel);
                                     }
                                 }
                             }
-                        }
-                        cur_x += cg->advance_x;
-                    }
 
-                    GC local_gc = XCreateGC(dpy, win_d, 0, NULL);
-                    if (local_gc) {
-                        x_error_trap = 0;
-                        orig_x_error_handler = XSetErrorHandler(trap_x_errors);
-                        XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
-                        XSync(dpy, False);
-                        XSetErrorHandler(orig_x_error_handler);
+                            unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
+                            cur_x = dev_pen_x;
+
+                            for (int i = 0; i < length; i++) {
+                                unsigned char c = (unsigned char)string[i];
+                                CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
+                                if (!cg) continue;
+
+                                if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                                    int gx0 = cur_x + cg->bitmap_left - min_x;
+                                    int gy0 = dev_pen_y - cg->bitmap_top - min_y;
+
+                                    for (int row = 0; row < cg->rows; row++) {
+                                        int py = gy0 + row;
+                                        if (py < 0 || py >= bbox_h) continue;
+                                        unsigned char *src = cg->buffer + row * cg->pitch;
+
+                                        for (int col = 0; col < cg->width; col++) {
+                                            unsigned int alpha = src[col];
+                                            if (alpha < 24) continue;
+
+                                            int px = gx0 + col;
+                                            if (px < 0 || px >= bbox_w) continue;
+
+                                            if (alpha >= 224) {
+                                                XPutPixel(img, px, py, fg_pixel);
+                                            } else {
+                                                unsigned long bg = XGetPixel(img, px, py);
+                                                unsigned int cur_bg_r = (bg >> 16) & 0xFF;
+                                                unsigned int cur_bg_g = (bg >> 8) & 0xFF;
+                                                unsigned int cur_bg_b = bg & 0xFF;
+
+                                                unsigned int out_r = (fg_r * alpha + cur_bg_r * (255 - alpha)) / 255;
+                                                unsigned int out_g = (fg_g * alpha + cur_bg_g * (255 - alpha)) / 255;
+                                                unsigned int out_b = (fg_b * alpha + cur_bg_b * (255 - alpha)) / 255;
+
+                                                XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
+                                            }
+                                        }
+                                    }
+                                }
+                                cur_x += cg->advance_x;
+                            }
+
+                            XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
+                            XSync(dpy, False);
+                            XDestroyImage(img);
+                            XFreeGC(dpy, local_gc);
+                            XSync(dpy, False);
+                            XSetErrorHandler(prev_handler);
+                            return 0; // Ultra-fast single block blit succeeded!
+                        }
+                        if (img) XDestroyImage(img);
                         XFreeGC(dpy, local_gc);
                     }
-                    XDestroyImage(img);
-
-                    static int debug_timing = -1;
-                    if (debug_timing == -1) {
-                        debug_timing = (getenv("EXILE_DEBUG_TIMING") != NULL) ? 1 : 0;
-                    }
-                    if (debug_timing) {
-                        gettimeofday(&t1, NULL);
-                        long micros = (t1.tv_sec - t0.tv_sec) * 1000000L + (t1.tv_usec - t0.tv_usec);
-                        FILE *tf = fopen("/home/lavac/exile3-linux-1/timing.log", "a");
-                        if (tf) {
-                            fprintf(tf, "FAST_BLIT: %ld us (w=%d h=%d len=%d '%.*s')\n",
-                                    micros, bbox_w, bbox_h, length, length, string);
-                            fclose(tf);
-                        }
-                    }
-
-                    return 0; // Ultra-fast single block blit succeeded!
                 }
-                if (img) XDestroyImage(img);
             }
         }
+        XSync(dpy, False);
+        XSetErrorHandler(prev_handler);
     }
 
     if (bk_mode == 2) {
