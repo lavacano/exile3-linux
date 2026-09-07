@@ -52,10 +52,10 @@ int ioctl(int fd, unsigned long request, ...) {
         struct audio_buf_info *info = (struct audio_buf_info *)arg;
         if (info) {
             /* Force available buffer space so Exile III never starves or triggers sounds_fucked */
-            info->fragsize = 4096;
+            info->fragsize = 2048;
             info->fragstotal = 16;
             info->fragments = 16;
-            info->bytes = 65536;
+            info->bytes = 32768;
         }
         reset_sounds_fucked();
         return ret;
@@ -285,7 +285,7 @@ static void init_freetype(void) {
     ft_initialized = 1;
 }
 
-#define NUM_SIZE_SLOTS 8
+#define NUM_SIZE_SLOTS 16
 
 typedef struct {
     int valid;
@@ -406,6 +406,20 @@ static CachedGlyph *get_cached_glyph(int is_bold, int font_height, unsigned char
         cg->valid = 1;
     }
     return cg;
+}
+
+static void prewarm_font_cache(void) {
+    static int prewarmed = 0;
+    if (prewarmed || ft_failed || !ft_face_regular) return;
+    prewarmed = 1;
+    static const int sizes[] = { 11, 12, 13, 14, 16 };
+    for (int s = 0; s < 5; s++) {
+        for (int bold = 0; bold < 2; bold++) {
+            for (unsigned char c = 32; c <= 126; c++) {
+                get_cached_glyph(bold, sizes[s], c);
+            }
+        }
+    }
 }
 
 #define FONT_CACHE_SIZE 16
@@ -1385,5 +1399,6 @@ static void init_exile3_shim(void) {
     resolve_gdi_symbols();
     reset_sounds_fucked();
     init_freetype();
+    prewarm_font_cache();
 }
 

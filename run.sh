@@ -139,21 +139,22 @@ if [ "$USE_GAMESCOPE" = true ]; then
 
     if [ "$FULLSCREEN" = true ]; then
         if [ "$FILTER" = "fsr" ]; then
-            GS_ARGS=(-w 640 -h 480 -b -f -S "$SCALER_MODE" -F fsr --fsr-sharpness "$SHARPNESS")
+            GS_ARGS=(-w 640 -h 480 -r 60 -b -f -S "$SCALER_MODE" -F fsr --fsr-sharpness "$SHARPNESS")
         else
             # Default pixel filter: razor-sharp, zero-blur retro pixel art scaling
-            GS_ARGS=(-w 640 -h 480 -b -f -S "$SCALER_MODE" -F pixel)
+            GS_ARGS=(-w 640 -h 480 -r 60 -b -f -S "$SCALER_MODE" -F pixel)
         fi
     elif [ "$SCALE" = "3x" ]; then
-        GS_ARGS=(-w 640 -h 480 -W 1920 -H 1440 -S integer -F "$FILTER")
+        GS_ARGS=(-w 640 -h 480 -r 60 -W 1920 -H 1440 -S integer -F "$FILTER")
     else
         # Default 2x (1280x960 clean integer scale for 640x480)
-        GS_ARGS=(-w 640 -h 480 -W 1280 -H 960 -S integer -F "$FILTER")
+        GS_ARGS=(-w 640 -h 480 -r 60 -W 1280 -H 960 -S integer -F "$FILTER")
     fi
 
-    # Clean up previous session sockets
-    distrobox enter exile3 -- pkill -9 -f "Xephyr :2" 2>/dev/null || true
-    pkill -9 -f "Xephyr :2" 2>/dev/null || true
+    # Clean up previous session sockets quickly
+    if pgrep -f "Xephyr :2" >/dev/null 2>&1; then
+        pkill -9 -f "Xephyr :2" 2>/dev/null || true
+    fi
     rm -f /tmp/.X11-unix/X2 2>/dev/null || true
 
     NO_AA_VAL="0"
@@ -186,7 +187,7 @@ if [ "$USE_GAMESCOPE" = true ]; then
         '
     else
         exec gamescope "${GS_ARGS[@]}" -- bash -c '
-            distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" &
+            distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" +bs -nolisten tcp -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" &
             XEP_PID=$!
             cleanup() {
                 distrobox enter exile3 -- pkill -9 -f "Xephyr :2" 2>/dev/null || true
@@ -241,12 +242,13 @@ else
             -v "$DIR/saves:/game/saves" \
             "$DOCKER_IMAGE" "$TARGET"
     else
-        distrobox enter exile3 -- pkill -9 -f "Xephyr :1" 2>/dev/null || true
-        pkill -9 -f "Xephyr :1" 2>/dev/null || true
+        if pgrep -f "Xephyr :1" >/dev/null 2>&1; then
+            pkill -9 -f "Xephyr :1" 2>/dev/null || true
+        fi
         rm -f /tmp/.X11-unix/X1 2>/dev/null || true
-        sleep 0.1
+        sleep 0.05
 
-        distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" -title "$TITLE" -ac -fp "$DIR/fonts" &
+        distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp "$DIR/fonts" &
         XEPHYR_PID=$!
 
         cleanup() {
