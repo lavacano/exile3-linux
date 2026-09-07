@@ -203,6 +203,7 @@ if [ "$USE_GAMESCOPE" = true ]; then
             distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && padsp '"$BIN"'"
             cleanup
         '
+    fi
 else
     # Direct Xephyr (Native 640x480 on desktop without Gamescope)
     if [ "$FULLSCREEN" = true ]; then
