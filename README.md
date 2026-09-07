@@ -53,6 +53,14 @@ docker run --rm -it --net=host --ipc=host \
 
 If you have cloned this repository and have Xephyr / Gamescope installed (or use Distrobox):
 
+### Optional: Installing Gamescope (for Fullscreen Scaling & AMD FSR)
+
+Gamescope is optional (the game will fall back to a native 640x480 Xephyr window without it), but recommended for modern displays:
+
+* **Ubuntu / Debian**: `sudo apt install gamescope`
+* **Arch Linux**: `sudo pacman -S gamescope`
+* **Fedora**: `sudo dnf install gamescope`
+
 ```bash
 # Launch game in best-quality fullscreen (Gamescope + pixel-art filter)
 ./run.sh -f
