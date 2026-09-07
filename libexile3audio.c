@@ -40,15 +40,7 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
     void *arg = va_arg(ap, void *);
     va_end(ap);
 
-    if (!real_ioctl) {
-        real_ioctl = (real_ioctl_t)dlsym(RTLD_NEXT, "ioctl");
-    }
-
     if (request == SNDCTL_DSP_GETOSPACE) {
-        int ret = 0;
-        if (real_ioctl) {
-            ret = real_ioctl(fd, request, arg);
-        }
         struct audio_buf_info *info = (struct audio_buf_info *)arg;
         if (info) {
             /* Force available buffer space so Exile III never starves or triggers sounds_fucked */
@@ -58,11 +50,11 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
             info->bytes = 32768;
         }
         reset_sounds_fucked();
-        return ret;
+        return 0;
     }
 
     /* Prevent padsp from blocking the main game engine loop on sound playback */
-    if (request == SNDCTL_DSP_POST || request == SNDCTL_DSP_SYNC) {
+    if (request == SNDCTL_DSP_NONBLOCK || request == SNDCTL_DSP_POST || request == SNDCTL_DSP_SYNC) {
         reset_sounds_fucked();
         return 0;
     }
@@ -71,10 +63,39 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
         reset_sounds_fucked();
     }
 
+    if (__builtin_expect(!real_ioctl, 0)) {
+        real_ioctl = (real_ioctl_t)dlsym(RTLD_NEXT, "ioctl");
+    }
+
     if (real_ioctl) {
         return real_ioctl(fd, request, arg);
     }
 
+    return 0;
+}
+
+#include <sched.h>
+#include <time.h>
+#include <sys/prctl.h>
+
+__attribute__((visibility("default"))) void Sleep(uint32_t dwMilliseconds) {
+    if (dwMilliseconds == 0) {
+        sched_yield();
+        return;
+    }
+    struct timespec ts;
+    ts.tv_sec = dwMilliseconds / 1000;
+    ts.tv_nsec = (dwMilliseconds % 1000) * 1000000L;
+    nanosleep(&ts, NULL);
+}
+
+__attribute__((visibility("default"))) void LogError(int err, void *ptr) {
+}
+
+__attribute__((visibility("default"))) void LogParamError(int err, void *ptr, ...) {
+}
+
+__attribute__((visibility("default"))) int logstr(int level, ...) {
     return 0;
 }
 
@@ -294,6 +315,12 @@ static inline void fast_fill_pixel(uint32_t *data, uint32_t pixel, int count) {
     }
     __m128i val128 = _mm_set1_epi32((int)pixel);
     int i = 0;
+    for (; i <= count - 16; i += 16) {
+        _mm_storeu_si128((__m128i *)(data + i), val128);
+        _mm_storeu_si128((__m128i *)(data + i + 4), val128);
+        _mm_storeu_si128((__m128i *)(data + i + 8), val128);
+        _mm_storeu_si128((__m128i *)(data + i + 12), val128);
+    }
     for (; i <= count - 4; i += 4) {
         _mm_storeu_si128((__m128i *)(data + i), val128);
     }
@@ -453,7 +480,7 @@ static void prewarm_font_cache(void) {
     }
 }
 
-#define FONT_CACHE_SIZE 16
+#define FONT_CACHE_SIZE 64
 typedef struct {
     Font font_id;
     int size;
@@ -497,6 +524,11 @@ static void get_font_info(Display *dpy, Font font_id, int *size, int *is_bold, i
         font_cache[font_cache_count].is_bold = f_bold;
         font_cache[font_cache_count].ascent = f_ascent;
         font_cache_count++;
+    } else {
+        font_cache[0].font_id = font_id;
+        font_cache[0].size = f_size;
+        font_cache[0].is_bold = f_bold;
+        font_cache[0].ascent = f_ascent;
     }
 
     *size = f_size;
@@ -542,7 +574,7 @@ typedef struct {
     unsigned int depth;
 } WinGeoCache;
 
-#define WIN_GEO_CACHE_SIZE 8
+#define WIN_GEO_CACHE_SIZE 32
 static WinGeoCache win_geo_cache[WIN_GEO_CACHE_SIZE];
 static int win_geo_count = 0;
 
@@ -584,7 +616,7 @@ static inline int get_cached_geometry(Display *dpy, Drawable d, unsigned int *w,
 }
 
 #define SCRATCH_BUF_MAX_W 640
-#define SCRATCH_BUF_MAX_H 64
+#define SCRATCH_BUF_MAX_H 256
 #define SCRATCH_BUF_PIXELS (SCRATCH_BUF_MAX_W * SCRATCH_BUF_MAX_H)
 
 static uint32_t scratch_text_buf[SCRATCH_BUF_PIXELS];
@@ -614,6 +646,15 @@ static XImage *get_scratch_ximage(Display *dpy, int w, int h) {
     return scratch_ximage;
 }
 
+#define GC_CACHE_SIZE 8
+typedef struct {
+    Display *dpy;
+    Drawable win;
+    GC gc;
+} GCCacheEntry;
+static GCCacheEntry gc_cache[GC_CACHE_SIZE];
+static int gc_cache_count = 0;
+
 static inline void reset_scratch_and_geo(void) {
     if (scratch_ximage) {
         scratch_ximage->data = NULL;
@@ -621,6 +662,12 @@ static inline void reset_scratch_and_geo(void) {
         scratch_ximage = NULL;
         scratch_ximage_dpy = NULL;
     }
+    for (int g = 0; g < gc_cache_count; g++) {
+        if (gc_cache[g].gc && gc_cache[g].dpy) {
+            XFreeGC(gc_cache[g].dpy, gc_cache[g].gc);
+        }
+    }
+    gc_cache_count = 0;
     win_geo_count = 0;
 }
 
@@ -1229,20 +1276,31 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
             int bbox_h = max_y - min_y;
 
             if (bbox_w > 0 && bbox_h > 0) {
-                static GC cached_hdc_gc = 0;
-                static Display *cached_hdc_dpy = NULL;
-                static Drawable cached_hdc_win = 0;
-
-                if (!cached_hdc_gc || cached_hdc_dpy != dpy || cached_hdc_win != win_d) {
-                    if (cached_hdc_gc && cached_hdc_dpy) {
-                        XFreeGC(cached_hdc_dpy, cached_hdc_gc);
-                        cached_hdc_gc = 0;
+                GC local_gc = 0;
+                for (int g = 0; g < gc_cache_count; g++) {
+                    if (gc_cache[g].dpy == dpy && gc_cache[g].win == win_d) {
+                        local_gc = gc_cache[g].gc;
+                        break;
                     }
-                    cached_hdc_gc = XCreateGC(dpy, win_d, 0, NULL);
-                    cached_hdc_dpy = dpy;
-                    cached_hdc_win = win_d;
                 }
-                GC local_gc = cached_hdc_gc;
+                if (!local_gc) {
+                    local_gc = XCreateGC(dpy, win_d, 0, NULL);
+                    if (local_gc) {
+                        if (gc_cache_count < GC_CACHE_SIZE) {
+                            gc_cache[gc_cache_count].dpy = dpy;
+                            gc_cache[gc_cache_count].win = win_d;
+                            gc_cache[gc_cache_count].gc = local_gc;
+                            gc_cache_count++;
+                        } else {
+                            if (gc_cache[0].gc && gc_cache[0].dpy) {
+                                XFreeGC(gc_cache[0].dpy, gc_cache[0].gc);
+                            }
+                            gc_cache[0].dpy = dpy;
+                            gc_cache[0].win = win_d;
+                            gc_cache[0].gc = local_gc;
+                        }
+                    }
+                }
 
                 if (local_gc) {
                     XImage *img = NULL;
@@ -1407,9 +1465,6 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                 }
                 if (x_error_trap) {
                     reset_scratch_and_geo();
-                    cached_hdc_gc = 0;
-                    cached_hdc_dpy = NULL;
-                    cached_hdc_win = 0;
                 }
             }
         }
@@ -1589,6 +1644,7 @@ static void init_exile3_shim(void) {
     real_textouta = (real_textout_t)dlsym(RTLD_NEXT, "TextOutA");
     resolve_gdi_symbols();
     reset_sounds_fucked();
+    prctl(PR_SET_TIMERSLACK, 1, 0, 0, 0);
     init_freetype();
     prewarm_font_cache();
 }
