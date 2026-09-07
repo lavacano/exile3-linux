@@ -14,6 +14,10 @@ SHARPNESS=1
 USE_DOCKER=false
 COLOR_DEPTH=24
 AA_MODE="grayscale"
+DOCKER_IMAGE="${EXILE_DOCKER_IMAGE:-ghcr.io/lavacano/exile3:latest}"
+if docker image inspect exile3:latest >/dev/null 2>&1; then
+    DOCKER_IMAGE="exile3:latest"
+fi
 
 print_help() {
     cat << 'EOF'
@@ -178,7 +182,7 @@ if [ "$USE_GAMESCOPE" = true ]; then
                 -e PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native" \
                 --device /dev/dri \
                 -v "'"$DIR"'/saves:/game/saves" \
-                exile3:latest "'"$TARGET"'"
+                "'"$DOCKER_IMAGE"'" "'"$TARGET"'"
         '
     else
         exec gamescope "${GS_ARGS[@]}" -- bash -c '
@@ -224,7 +228,7 @@ else
             -e PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native" \
             --device /dev/dri \
             -v "$DIR/saves:/game/saves" \
-            exile3:latest "$TARGET"
+            "$DOCKER_IMAGE" "$TARGET"
     else
         distrobox enter exile3 -- pkill -9 -f "Xephyr :1" 2>/dev/null || true
         pkill -9 -f "Xephyr :1" 2>/dev/null || true
