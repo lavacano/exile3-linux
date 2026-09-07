@@ -203,9 +203,16 @@ if [ "$USE_GAMESCOPE" = true ]; then
             distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && padsp '"$BIN"'"
             cleanup
         '
-    fi
 else
     # Direct Xephyr (Native 640x480 on desktop without Gamescope)
+    if [ "$FULLSCREEN" = true ]; then
+        echo "Note: 'gamescope' is not installed; running in native 640x480 window."
+        echo "To enable crisp fullscreen scaling (with integer scaling or AMD FSR), install gamescope:"
+        echo "  Ubuntu/Debian: sudo apt install gamescope"
+        echo "  Arch Linux:    sudo pacman -S gamescope"
+        echo "  Fedora:        sudo dnf install gamescope"
+        echo ""
+    fi
     NO_AA_VAL="0"
     if [ "$AA_MODE" = "none" ]; then
         NO_AA_VAL="1"
