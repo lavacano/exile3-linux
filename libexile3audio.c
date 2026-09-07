@@ -405,13 +405,17 @@ static CachedGlyph *get_cached_glyph(int is_bold, int font_height, unsigned char
             }
         }
 
-        if (p_FT_Set_Char_Size) {
-            long char_w = (long)(font_width_scale * font_height * 64.0f + 0.5f);
-            long char_h = font_height * 64;
-            p_FT_Set_Char_Size(face, char_w, char_h, 72, 72);
-        } else if (p_FT_Set_Pixel_Sizes) {
-            unsigned int pw = (unsigned int)(font_width_scale * font_height + 0.5f);
-            p_FT_Set_Pixel_Sizes(face, pw, font_height);
+        static int last_face_height[2] = {-1, -1};
+        if (last_face_height[b_idx] != font_height) {
+            if (p_FT_Set_Char_Size) {
+                long char_w = (long)(font_width_scale * font_height * 64.0f + 0.5f);
+                long char_h = font_height * 64;
+                p_FT_Set_Char_Size(face, char_w, char_h, 72, 72);
+            } else if (p_FT_Set_Pixel_Sizes) {
+                unsigned int pw = (unsigned int)(font_width_scale * font_height + 0.5f);
+                p_FT_Set_Pixel_Sizes(face, pw, font_height);
+            }
+            last_face_height[b_idx] = font_height;
         }
 
         if (p_FT_Load_Char(face, c, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0) {
@@ -476,6 +480,11 @@ static void get_font_info(Display *dpy, Font font_id, int *size, int *is_bold, i
             *size = font_cache[i].size;
             *is_bold = font_cache[i].is_bold;
             *ascent = font_cache[i].ascent;
+            if (i > 0) {
+                FontCacheEntry tmp = font_cache[i];
+                font_cache[i] = font_cache[0];
+                font_cache[0] = tmp;
+            }
             return;
         }
     }
@@ -563,6 +572,11 @@ static inline int get_cached_geometry(Display *dpy, Drawable d, unsigned int *w,
             *w = win_geo_cache[i].width;
             *h = win_geo_cache[i].height;
             *depth = win_geo_cache[i].depth;
+            if (i > 0) {
+                WinGeoCache tmp = win_geo_cache[i];
+                win_geo_cache[i] = win_geo_cache[0];
+                win_geo_cache[0] = tmp;
+            }
             return 1;
         }
     }
@@ -790,8 +804,11 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     uint32_t g_fg  = (fg_val >> 8) & 0x000000FF;
 
     if (is_fast_32) {
+        uint32_t bg_val = (uint32_t)values.background;
+        uint32_t rb_bg_const = bg_val & 0x00FF00FF;
+        uint32_t g_bg_const  = (bg_val >> 8) & 0x000000FF;
+
         if (!is_pure_opaque && is_image_string) {
-            uint32_t bg_val = (uint32_t)values.background;
             for (int py = 0; py < bbox_h; py++) {
                 uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
                 fast_fill_pixel(dst_row, bg_val, bbox_w);
@@ -819,20 +836,36 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
                         uint32_t *dst = (uint32_t *)(img->data + py * img->bytes_per_line) + gx0 + c_start;
                         const unsigned char *src_ptr = cg->buffer + row * cg->pitch + c_start;
 
-                        for (int col = 0; col < col_count; col++) {
-                            unsigned int alpha = src_ptr[col];
-                            if (alpha < 24) continue;
+                        if (is_pure_opaque) {
+                            for (int col = 0; col < col_count; col++) {
+                                unsigned int alpha = src_ptr[col];
+                                if (alpha < 24) continue;
 
-                            if (alpha >= 224) {
-                                dst[col] = fg_val;
-                            } else {
-                                uint32_t bg = dst[col];
-                                uint32_t rb_bg = bg & 0x00FF00FF;
-                                uint32_t g_bg  = (bg >> 8) & 0x000000FF;
-                                unsigned int inv_a = 255 - alpha;
-                                uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
-                                uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
-                                dst[col] = rb | (g << 8);
+                                if (alpha >= 224) {
+                                    dst[col] = fg_val;
+                                } else {
+                                    unsigned int inv_a = 255 - alpha;
+                                    uint32_t rb = ((rb_fg * alpha + rb_bg_const * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                    uint32_t g  = ((g_fg * alpha + g_bg_const * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                    dst[col] = rb | (g << 8);
+                                }
+                            }
+                        } else {
+                            for (int col = 0; col < col_count; col++) {
+                                unsigned int alpha = src_ptr[col];
+                                if (alpha < 24) continue;
+
+                                if (alpha >= 224) {
+                                    dst[col] = fg_val;
+                                } else {
+                                    uint32_t bg = dst[col];
+                                    uint32_t rb_bg = bg & 0x00FF00FF;
+                                    uint32_t g_bg  = (bg >> 8) & 0x000000FF;
+                                    unsigned int inv_a = 255 - alpha;
+                                    uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                    uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                    dst[col] = rb | (g << 8);
+                                }
                             }
                         }
                     }
@@ -970,6 +1003,7 @@ static real_getpaletteentries_t real_getpaletteentries = NULL;
 
 static MY_PALETTEENTRY cached_palette[256];
 static uint32_t cached_rgb_palette[256];
+static uint32_t cached_x11_palette[256];
 static int palette_cached = 0;
 static void **cached_hpal_sym = NULL;
 static int hpal_resolved = 0;
@@ -991,6 +1025,9 @@ static void update_palette_cache(void) {
                     cached_rgb_palette[i] = ((uint32_t)cached_palette[i].peRed) |
                                             ((uint32_t)cached_palette[i].peGreen << 8) |
                                             ((uint32_t)cached_palette[i].peBlue << 16);
+                    cached_x11_palette[i] = ((uint32_t)cached_palette[i].peRed << 16) |
+                                            ((uint32_t)cached_palette[i].peGreen << 8) |
+                                            ((uint32_t)cached_palette[i].peBlue);
                 }
                 palette_cached = 1;
             }
@@ -1012,6 +1049,22 @@ static inline uint32_t colorref_to_rgb(uint32_t col) {
         return (idx) | (idx << 8) | (idx << 16);
     }
     return col & 0x00FFFFFF;
+}
+
+static inline uint32_t colorref_to_x11_pixel(uint32_t col) {
+    if ((col & 0xFF000000) == 0x01000000) {
+        if (__builtin_expect(!palette_cached, 0)) {
+            update_palette_cache();
+        }
+        if (palette_cached) {
+            return cached_x11_palette[col & 0xFF];
+        }
+        unsigned int idx = col & 0xFF;
+        if (idx == 0 || idx == 252) return 0x00000000;
+        if (idx == 255) return 0x00FFFFFF;
+        return (idx << 16) | (idx << 8) | idx;
+    }
+    return ((col & 0xFF) << 16) | (col & 0x0000FF00) | ((col >> 16) & 0xFF);
 }
 
 static int gdi_resolved = 0;
@@ -1129,6 +1182,8 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
 
     uint32_t fg_color = colorref_to_rgb(fg_raw);
     uint32_t bk_color = colorref_to_rgb(bk_raw);
+    uint32_t fg_pixel = colorref_to_x11_pixel(fg_raw);
+    uint32_t bk_pixel = colorref_to_x11_pixel(bk_raw);
 
     unsigned int fg_r = fg_color & 0xFF;
     unsigned int fg_g = (fg_color >> 8) & 0xFF;
@@ -1259,6 +1314,11 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                 for (int g = 0; g < gc_cache_count; g++) {
                     if (gc_cache[g].dpy == dpy && gc_cache[g].win == win_d) {
                         local_gc = gc_cache[g].gc;
+                        if (g > 0) {
+                            GCCacheEntry tmp = gc_cache[g];
+                            gc_cache[g] = gc_cache[0];
+                            gc_cache[0] = tmp;
+                        }
                         break;
                     }
                 }
@@ -1284,7 +1344,6 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                 if (local_gc) {
                     XImage *img = NULL;
                     int is_scratch = 0;
-                    uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
 
                     if (is_pure_opaque) {
                         img = get_scratch_ximage(dpy, bbox_w, bbox_h);
@@ -1331,9 +1390,10 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                 }
                             }
 
-                            uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
                             uint32_t rb_fg = fg_pixel & 0x00FF00FF;
                             uint32_t g_fg  = (fg_pixel >> 8) & 0x000000FF;
+                            uint32_t rb_bg_const = bk_pixel & 0x00FF00FF;
+                            uint32_t g_bg_const  = (bk_pixel >> 8) & 0x000000FF;
                             int cur_x = dev_pen_x;
 
                             for (int i = 0; i < length; i++) {
@@ -1356,20 +1416,36 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                             uint32_t *dst = (uint32_t *)(img->data + py * img->bytes_per_line) + gx0 + c_start;
                                             const unsigned char *src_ptr = cg->buffer + row * cg->pitch + c_start;
 
-                                            for (int col = 0; col < col_count; col++) {
-                                                unsigned int alpha = src_ptr[col];
-                                                if (alpha < 24) continue;
+                                            if (is_pure_opaque) {
+                                                for (int col = 0; col < col_count; col++) {
+                                                    unsigned int alpha = src_ptr[col];
+                                                    if (alpha < 24) continue;
 
-                                                if (alpha >= 224) {
-                                                    dst[col] = fg_pixel;
-                                                } else {
-                                                    uint32_t bg = dst[col];
-                                                    uint32_t rb_bg = bg & 0x00FF00FF;
-                                                    uint32_t g_bg  = (bg >> 8) & 0x000000FF;
-                                                    unsigned int inv_a = 255 - alpha;
-                                                    uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
-                                                    uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
-                                                    dst[col] = rb | (g << 8);
+                                                    if (alpha >= 224) {
+                                                        dst[col] = fg_pixel;
+                                                    } else {
+                                                        unsigned int inv_a = 255 - alpha;
+                                                        uint32_t rb = ((rb_fg * alpha + rb_bg_const * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                                        uint32_t g  = ((g_fg * alpha + g_bg_const * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                                        dst[col] = rb | (g << 8);
+                                                    }
+                                                }
+                                            } else {
+                                                for (int col = 0; col < col_count; col++) {
+                                                    unsigned int alpha = src_ptr[col];
+                                                    if (alpha < 24) continue;
+
+                                                    if (alpha >= 224) {
+                                                        dst[col] = fg_pixel;
+                                                    } else {
+                                                        uint32_t bg = dst[col];
+                                                        uint32_t rb_bg = bg & 0x00FF00FF;
+                                                        uint32_t g_bg  = (bg >> 8) & 0x000000FF;
+                                                        unsigned int inv_a = 255 - alpha;
+                                                        uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                                        uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                                        dst[col] = rb | (g << 8);
+                                                    }
                                                 }
                                             }
                                         }
@@ -1379,7 +1455,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                             }
                         } else {
                             if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
-                                unsigned long bk_pixel_ul = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                unsigned long bk_pixel_ul = (unsigned long)bk_pixel;
                                 for (int py = by0; py < by1; py++) {
                                     for (int px = bx0; px < bx1; px++) {
                                         XPutPixel(img, px, py, bk_pixel_ul);
@@ -1387,7 +1463,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                 }
                             }
 
-                            unsigned long fg_pixel_ul = (fg_r << 16) | (fg_g << 8) | fg_b;
+                            unsigned long fg_pixel_ul = (unsigned long)fg_pixel;
                             int cur_x = dev_pen_x;
 
                             for (int i = 0; i < length; i++) {

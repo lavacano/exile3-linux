@@ -196,11 +196,11 @@ if [ "$USE_GAMESCOPE" = true ]; then
                 rm -f /tmp/.X11-unix/X2 2>/dev/null || true
             }
             trap cleanup EXIT INT TERM
-            for i in $(seq 1 60); do
+            for i in $(seq 1 100); do
                 if [ -S /tmp/.X11-unix/X2 ]; then
                     break
                 fi
-                sleep 0.05
+                sleep 0.01
             done
             distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export TWINRC='"$DIR"'/twinrc && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '"$BIN"'"
             cleanup
@@ -260,11 +260,11 @@ else
         }
         trap cleanup EXIT INT TERM
 
-        for i in $(seq 1 60); do
+        for i in $(seq 1 100); do
             if [ -S /tmp/.X11-unix/X1 ]; then
                 break
             fi
-            sleep 0.05
+            sleep 0.01
         done
 
         distrobox enter exile3 -- sh -c "cd '$DIR' && export DISPLAY=:1 && export EXILE_PATH='$DIR' && export LD_LIBRARY_PATH='$DIR' && export LD_PRELOAD='$DIR/libexile3audio.so' && export TWINRC='$DIR/twinrc' && export EXILE_AA='$AA_MODE' && export EXILE_NO_AA='$NO_AA_VAL' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '$BIN'"
