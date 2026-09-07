@@ -15,15 +15,22 @@ typedef int (*real_msgbox_t)(void *hWnd, const char *lpText, const char *lpCapti
 static real_ioctl_t real_ioctl = NULL;
 static real_msgbox_t real_msgbox = NULL;
 
-static void reset_sounds_fucked(void) {
-    void *sf = dlsym(RTLD_DEFAULT, "sounds_fucked");
-    if (sf) {
-        *(volatile uint8_t *)sf = 0;
+static volatile uint8_t *cached_sf = NULL;
+static void *cached_as = NULL;
+static int sf_resolved = 0;
+
+static inline void reset_sounds_fucked(void) {
+    if (__builtin_expect(!sf_resolved, 0)) {
+        cached_sf = (volatile uint8_t *)dlsym(RTLD_DEFAULT, "sounds_fucked");
+        cached_as = dlsym(RTLD_DEFAULT, "always_asynch");
+        sf_resolved = 1;
+    }
+    if (cached_sf) {
+        *cached_sf = 0;
     }
     /* Force all 100 sound effects to play asynchronously so the game engine never freezes */
-    void *as = dlsym(RTLD_DEFAULT, "always_asynch");
-    if (as) {
-        memset(as, 1, 100);
+    if (cached_as) {
+        memset(cached_as, 1, 100);
     }
 }
 
@@ -303,13 +310,21 @@ static FontSizeCache size_caches[NUM_SIZE_SLOTS];
 static CachedGlyph *get_cached_glyph(int is_bold, int font_height, unsigned char c) {
     if (font_height <= 0 || font_height > 120) font_height = 12;
 
+    static int last_slot = 0;
     int slot_idx = -1;
-    for (int i = 0; i < NUM_SIZE_SLOTS; i++) {
-        if (size_caches[i].in_use &&
-            size_caches[i].is_bold == is_bold &&
-            size_caches[i].font_height == font_height) {
-            slot_idx = i;
-            break;
+    if (size_caches[last_slot].in_use &&
+        size_caches[last_slot].is_bold == is_bold &&
+        size_caches[last_slot].font_height == font_height) {
+        slot_idx = last_slot;
+    } else {
+        for (int i = 0; i < NUM_SIZE_SLOTS; i++) {
+            if (size_caches[i].in_use &&
+                size_caches[i].is_bold == is_bold &&
+                size_caches[i].font_height == font_height) {
+                slot_idx = i;
+                last_slot = i;
+                break;
+            }
         }
     }
 
@@ -476,11 +491,6 @@ XErrorHandler XSetErrorHandler(XErrorHandler handler) {
 }
 
 static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length, int is_image_string) {
-    FILE *plog = fopen("/home/lavac/exile3-linux-1/probe.log", "a");
-    if (plog) {
-        fprintf(plog, "draw_text_aa: dpy=%p d=%lu x=%d y=%d str='%.*s'\n", dpy, (unsigned long)d, x, y, length, string);
-        fclose(plog);
-    }
     if (!ft_initialized) {
         init_freetype();
     }
@@ -496,6 +506,13 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     int font_size = 12, is_bold = 0, font_ascent = 10;
     get_font_info(dpy, values.font, &font_size, &is_bold, &font_ascent);
 
+    CachedGlyph *glyphs_buf[256];
+    CachedGlyph **glyphs = glyphs_buf;
+    if (length > 256) {
+        glyphs = (CachedGlyph **)malloc(sizeof(CachedGlyph *) * length);
+        if (!glyphs) return -1;
+    }
+
     int pen_x = x;
     int min_x = x, max_x = x;
     int min_y = y - font_ascent, max_y = y + (font_size - font_ascent);
@@ -503,6 +520,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     for (int i = 0; i < length; i++) {
         unsigned char c = (unsigned char)string[i];
         CachedGlyph *cg = get_cached_glyph(is_bold, font_size, c);
+        glyphs[i] = cg;
         if (!cg) continue;
 
         int gx = pen_x + cg->bitmap_left;
@@ -534,6 +552,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     if (!s || x_error_trap || depth < 24) {
         XSync(dpy, False);
         XSetErrorHandler(prev_handler);
+        if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
 
@@ -547,6 +566,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     if (bbox_w <= 0 || bbox_h <= 0) {
         XSync(dpy, False);
         XSetErrorHandler(prev_handler);
+        if (glyphs != glyphs_buf) free(glyphs);
         return 0;
     }
 
@@ -555,6 +575,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
         if (img) XDestroyImage(img);
         XSync(dpy, False);
         XSetErrorHandler(prev_handler);
+        if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
 
@@ -562,68 +583,131 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
         XDestroyImage(img);
         XSync(dpy, False);
         XSetErrorHandler(prev_handler);
+        if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
 
-    if (is_image_string) {
-        for (int py = 0; py < bbox_h; py++) {
-            for (int px = 0; px < bbox_w; px++) {
-                XPutPixel(img, px, py, values.background);
-            }
-        }
-    }
+    int is_fast_32 = (img->bits_per_pixel == 32 &&
+                      img->red_mask == 0x00FF0000 &&
+                      img->green_mask == 0x0000FF00 &&
+                      img->blue_mask == 0x000000FF);
 
     unsigned long fg = values.foreground;
     unsigned int fg_r = (fg >> 16) & 0xFF;
     unsigned int fg_g = (fg >> 8) & 0xFF;
     unsigned int fg_b = fg & 0xFF;
 
-    pen_x = x;
-    for (int i = 0; i < length; i++) {
-        unsigned char c = (unsigned char)string[i];
-        CachedGlyph *cg = get_cached_glyph(is_bold, font_size, c);
-        if (!cg) continue;
-
-        if (cg->buffer && cg->rows > 0 && cg->width > 0) {
-            int gx0 = pen_x + cg->bitmap_left - min_x;
-            int gy0 = y - cg->bitmap_top - min_y;
-
-            for (int row = 0; row < cg->rows; row++) {
-                int py = gy0 + row;
-                if (py < 0 || py >= bbox_h) continue;
-                unsigned char *src = cg->buffer + row * cg->pitch;
-
-                for (int col = 0; col < cg->width; col++) {
-                    unsigned int alpha = src[col];
-                    if (alpha < 24) continue;
-
-                    int px = gx0 + col;
-                    if (px < 0 || px >= bbox_w) continue;
-
-                    if (alpha >= 224) {
-                        XPutPixel(img, px, py, fg);
-                    } else {
-                        unsigned long bg = XGetPixel(img, px, py);
-                        unsigned int bg_r = (bg >> 16) & 0xFF;
-                        unsigned int bg_g = (bg >> 8) & 0xFF;
-                        unsigned int bg_b = bg & 0xFF;
-
-                        unsigned int out_r = (fg_r * alpha + bg_r * (255 - alpha)) / 255;
-                        unsigned int out_g = (fg_g * alpha + bg_g * (255 - alpha)) / 255;
-                        unsigned int out_b = (fg_b * alpha + bg_b * (255 - alpha)) / 255;
-
-                        XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
-                    }
+    if (is_fast_32) {
+        if (is_image_string) {
+            uint32_t bg_val = (uint32_t)values.background;
+            for (int py = 0; py < bbox_h; py++) {
+                uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                for (int px = 0; px < bbox_w; px++) {
+                    dst_row[px] = bg_val;
                 }
             }
         }
-        pen_x += cg->advance_x;
+
+        uint32_t fg_val = (fg_r << 16) | (fg_g << 8) | fg_b;
+        pen_x = x;
+        for (int i = 0; i < length; i++) {
+            CachedGlyph *cg = glyphs[i];
+            if (!cg) continue;
+
+            if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                int gx0 = pen_x + cg->bitmap_left - min_x;
+                int gy0 = y - cg->bitmap_top - min_y;
+
+                for (int row = 0; row < cg->rows; row++) {
+                    int py = gy0 + row;
+                    if (py < 0 || py >= bbox_h) continue;
+                    uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                    const unsigned char *src = cg->buffer + row * cg->pitch;
+
+                    for (int col = 0; col < cg->width; col++) {
+                        unsigned int alpha = src[col];
+                        if (alpha < 24) continue;
+
+                        int px = gx0 + col;
+                        if (px < 0 || px >= bbox_w) continue;
+
+                        if (alpha >= 224) {
+                            dst_row[px] = fg_val;
+                        } else {
+                            uint32_t bg = dst_row[px];
+                            unsigned int bg_r = (bg >> 16) & 0xFF;
+                            unsigned int bg_g = (bg >> 8) & 0xFF;
+                            unsigned int bg_b = bg & 0xFF;
+
+                            unsigned int inv_a = 255 - alpha;
+                            unsigned int out_r = (fg_r * alpha + bg_r * inv_a + 128) >> 8;
+                            unsigned int out_g = (fg_g * alpha + bg_g * inv_a + 128) >> 8;
+                            unsigned int out_b = (fg_b * alpha + bg_b * inv_a + 128) >> 8;
+
+                            dst_row[px] = (out_r << 16) | (out_g << 8) | out_b;
+                        }
+                    }
+                }
+            }
+            pen_x += cg->advance_x;
+        }
+    } else {
+        if (is_image_string) {
+            for (int py = 0; py < bbox_h; py++) {
+                for (int px = 0; px < bbox_w; px++) {
+                    XPutPixel(img, px, py, values.background);
+                }
+            }
+        }
+
+        pen_x = x;
+        for (int i = 0; i < length; i++) {
+            CachedGlyph *cg = glyphs[i];
+            if (!cg) continue;
+
+            if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                int gx0 = pen_x + cg->bitmap_left - min_x;
+                int gy0 = y - cg->bitmap_top - min_y;
+
+                for (int row = 0; row < cg->rows; row++) {
+                    int py = gy0 + row;
+                    if (py < 0 || py >= bbox_h) continue;
+                    unsigned char *src = cg->buffer + row * cg->pitch;
+
+                    for (int col = 0; col < cg->width; col++) {
+                        unsigned int alpha = src[col];
+                        if (alpha < 24) continue;
+
+                        int px = gx0 + col;
+                        if (px < 0 || px >= bbox_w) continue;
+
+                        if (alpha >= 224) {
+                            XPutPixel(img, px, py, fg);
+                        } else {
+                            unsigned long bg = XGetPixel(img, px, py);
+                            unsigned int bg_r = (bg >> 16) & 0xFF;
+                            unsigned int bg_g = (bg >> 8) & 0xFF;
+                            unsigned int bg_b = bg & 0xFF;
+
+                            unsigned int inv_a = 255 - alpha;
+                            unsigned int out_r = (fg_r * alpha + bg_r * inv_a + 128) >> 8;
+                            unsigned int out_g = (fg_g * alpha + bg_g * inv_a + 128) >> 8;
+                            unsigned int out_b = (fg_b * alpha + bg_b * inv_a + 128) >> 8;
+
+                            XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
+                        }
+                    }
+                }
+            }
+            pen_x += cg->advance_x;
+        }
     }
 
     XPutImage(dpy, d, gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
-    XSync(dpy, False);
     XDestroyImage(img);
+    XSync(dpy, False);
     XSetErrorHandler(prev_handler);
+    if (glyphs != glyphs_buf) free(glyphs);
     return 0;
 }
 
@@ -635,6 +719,15 @@ typedef int (*real_getbkmode_t)(void *hdc);
 typedef int (*real_gettextalign_t)(void *hdc);
 typedef int (*real_gettextmetrics_t)(void *hdc, void *tm);
 typedef int (*real_gettextface_t)(void *hdc, int nCount, char *lpFaceName);
+typedef void *(*real_twin_getdisplaydata_t)(void);
+typedef void *(*real_twin_getwindowdata_t)(void *hwnd);
+typedef void *(*real_windowfromdc_t)(void *hdc);
+typedef int (*real_getdcorgex_t)(void *hdc, void *pt);
+typedef void *HGDIOBJ;
+typedef struct { int left, top, right, bottom; } RECT;
+typedef HGDIOBJ (*real_createsolidbrush_t)(uint32_t crColor);
+typedef int (*real_fillrect_t)(void *hdc, const RECT *lprc, HGDIOBJ hbr);
+typedef int (*real_deleteobject_t)(HGDIOBJ hObject);
 
 static real_getpixel_t real_getpixel = NULL;
 static real_setpixel_t real_setpixel = NULL;
@@ -644,6 +737,13 @@ static real_getbkmode_t real_getbkmode = NULL;
 static real_gettextalign_t real_gettextalign = NULL;
 static real_gettextmetrics_t real_gettextmetrics = NULL;
 static real_gettextface_t real_gettextface = NULL;
+static real_twin_getdisplaydata_t p_getdisplaydata = NULL;
+static real_twin_getwindowdata_t p_getwindowdata = NULL;
+static real_windowfromdc_t real_windowfromdc = NULL;
+static real_getdcorgex_t p_getdcorgex = NULL;
+static real_createsolidbrush_t real_createsolidbrush = NULL;
+static real_fillrect_t real_fillrect = NULL;
+static real_deleteobject_t real_deleteobject = NULL;
 
 typedef struct {
     int32_t tmHeight;
@@ -679,40 +779,80 @@ typedef unsigned int (*real_getpaletteentries_t)(void *hpal, unsigned int iStart
 static real_getpaletteentries_t real_getpaletteentries = NULL;
 
 static MY_PALETTEENTRY cached_palette[256];
+static uint32_t cached_rgb_palette[256];
 static int palette_cached = 0;
+static void **cached_hpal_sym = NULL;
+static int hpal_resolved = 0;
 
 static void update_palette_cache(void) {
     if (!real_getpaletteentries) {
         real_getpaletteentries = (real_getpaletteentries_t)dlsym(RTLD_NEXT, "GetPaletteEntries");
     }
-    void *hpal_sym = dlsym(RTLD_DEFAULT, "hpal");
-    if (hpal_sym && real_getpaletteentries) {
-        void *hpal = *(void **)hpal_sym;
+    if (!hpal_resolved) {
+        cached_hpal_sym = (void **)dlsym(RTLD_DEFAULT, "hpal");
+        hpal_resolved = 1;
+    }
+    if (cached_hpal_sym && real_getpaletteentries) {
+        void *hpal = *cached_hpal_sym;
         if (hpal) {
             unsigned int num = real_getpaletteentries(hpal, 0, 256, cached_palette);
             if (num > 0) {
+                for (unsigned int i = 0; i < num; i++) {
+                    cached_rgb_palette[i] = ((uint32_t)cached_palette[i].peRed) |
+                                            ((uint32_t)cached_palette[i].peGreen << 8) |
+                                            ((uint32_t)cached_palette[i].peBlue << 16);
+                }
                 palette_cached = 1;
             }
         }
     }
 }
 
-static uint32_t colorref_to_rgb(uint32_t col) {
+static inline uint32_t colorref_to_rgb(uint32_t col) {
     if ((col & 0xFF000000) == 0x01000000) {
-        unsigned int idx = col & 0xFF;
-        if (!palette_cached) {
+        if (__builtin_expect(!palette_cached, 0)) {
             update_palette_cache();
         }
         if (palette_cached) {
-            return ((uint32_t)cached_palette[idx].peRed) |
-                   ((uint32_t)cached_palette[idx].peGreen << 8) |
-                   ((uint32_t)cached_palette[idx].peBlue << 16);
+            return cached_rgb_palette[col & 0xFF];
         }
+        unsigned int idx = col & 0xFF;
         if (idx == 0 || idx == 252) return 0x00000000;
         if (idx == 255) return 0x00FFFFFF;
         return (idx) | (idx << 8) | (idx << 16);
     }
     return col & 0x00FFFFFF;
+}
+
+static int gdi_resolved = 0;
+static void resolve_gdi_symbols(void) {
+    if (__builtin_expect(!gdi_resolved, 0)) {
+        real_gettextmetrics = (real_gettextmetrics_t)dlsym(RTLD_NEXT, "GetTextMetrics");
+        real_gettextcolor = (real_gettextcolor_t)dlsym(RTLD_NEXT, "GetTextColor");
+        real_getbkcolor = (real_getbkcolor_t)dlsym(RTLD_NEXT, "GetBkColor");
+        real_getbkmode = (real_getbkmode_t)dlsym(RTLD_NEXT, "GetBkMode");
+        real_gettextalign = (real_gettextalign_t)dlsym(RTLD_NEXT, "GetTextAlign");
+        real_getpixel = (real_getpixel_t)dlsym(RTLD_NEXT, "GetPixel");
+        real_setpixel = (real_setpixel_t)dlsym(RTLD_NEXT, "SetPixel");
+        real_gettextface = (real_gettextface_t)dlsym(RTLD_NEXT, "GetTextFace");
+        p_getdisplaydata = (real_twin_getdisplaydata_t)dlsym(RTLD_DEFAULT, "TWIN_GetDisplayData");
+        p_getwindowdata = (real_twin_getwindowdata_t)dlsym(RTLD_DEFAULT, "TWIN_GetWindowData");
+        real_windowfromdc = (real_windowfromdc_t)dlsym(RTLD_DEFAULT, "WindowFromDC");
+        p_getdcorgex = (real_getdcorgex_t)dlsym(RTLD_DEFAULT, "GetDCOrgEx");
+        real_createsolidbrush = (real_createsolidbrush_t)dlsym(RTLD_NEXT, "CreateSolidBrush");
+        real_fillrect = (real_fillrect_t)dlsym(RTLD_NEXT, "FillRect");
+        real_deleteobject = (real_deleteobject_t)dlsym(RTLD_NEXT, "DeleteObject");
+        gdi_resolved = 1;
+    }
+}
+
+static int cached_no_aa = -1;
+static inline int is_no_aa(void) {
+    if (__builtin_expect(cached_no_aa < 0, 0)) {
+        const char *env = getenv("EXILE_NO_AA");
+        cached_no_aa = (env && strcmp(env, "1") == 0) ? 1 : 0;
+    }
+    return cached_no_aa;
 }
 
 typedef int (*real_drawtext_t)(void *hdc, const char *lpString, int nCount, void *lpRect, unsigned int uFormat);
@@ -746,15 +886,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         return -1;
     }
 
-    if (!real_gettextmetrics) real_gettextmetrics = (real_gettextmetrics_t)dlsym(RTLD_NEXT, "GetTextMetrics");
-    if (!real_gettextcolor) real_gettextcolor = (real_gettextcolor_t)dlsym(RTLD_NEXT, "GetTextColor");
-    if (!real_getbkcolor) real_getbkcolor = (real_getbkcolor_t)dlsym(RTLD_NEXT, "GetBkColor");
-    if (!real_getbkmode) real_getbkmode = (real_getbkmode_t)dlsym(RTLD_NEXT, "GetBkMode");
-    if (!real_gettextalign) real_gettextalign = (real_gettextalign_t)dlsym(RTLD_NEXT, "GetTextAlign");
-    if (!real_getpixel) real_getpixel = (real_getpixel_t)dlsym(RTLD_NEXT, "GetPixel");
-    if (!real_setpixel) real_setpixel = (real_setpixel_t)dlsym(RTLD_NEXT, "SetPixel");
-    if (!real_gettextface) real_gettextface = (real_gettextface_t)dlsym(RTLD_NEXT, "GetTextFace");
-
+    resolve_gdi_symbols();
     if (!real_setpixel) return -1;
 
     MY_TEXTMETRIC tm;
@@ -801,21 +933,6 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     render_height += user_height_adjust;
     if (render_height < 8) render_height = 8;
 
-    typedef void *(*real_twin_getdisplaydata_t)(void);
-    typedef void *(*real_twin_getwindowdata_t)(void *hwnd);
-    typedef void *(*real_windowfromdc_t)(void *hdc);
-    typedef int (*real_getdcorgex_t)(void *hdc, void *pt);
-
-    static real_twin_getdisplaydata_t p_getdisplaydata = NULL;
-    static real_twin_getwindowdata_t p_getwindowdata = NULL;
-    static real_windowfromdc_t real_windowfromdc = NULL;
-    static real_getdcorgex_t p_getdcorgex = NULL;
-
-    if (!p_getdisplaydata) p_getdisplaydata = (real_twin_getdisplaydata_t)dlsym(RTLD_DEFAULT, "TWIN_GetDisplayData");
-    if (!p_getwindowdata) p_getwindowdata = (real_twin_getwindowdata_t)dlsym(RTLD_DEFAULT, "TWIN_GetWindowData");
-    if (!real_windowfromdc) real_windowfromdc = (real_windowfromdc_t)dlsym(RTLD_DEFAULT, "WindowFromDC");
-    if (!p_getdcorgex) p_getdcorgex = (real_getdcorgex_t)dlsym(RTLD_DEFAULT, "GetDCOrgEx");
-
     uint32_t fg_raw = real_gettextcolor ? real_gettextcolor(hdc) : 0x00000000;
     uint32_t bk_raw = real_getbkcolor ? real_getbkcolor(hdc) : 0x00FFFFFF;
     int bk_mode = real_getbkmode ? real_getbkmode(hdc) : 1;
@@ -835,10 +952,18 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     int org[2] = {0, 0};
     if (p_getdcorgex) p_getdcorgex(hdc, org);
 
+    CachedGlyph *glyphs_buf[256];
+    CachedGlyph **glyphs = glyphs_buf;
+    if (length > 256) {
+        glyphs = (CachedGlyph **)malloc(sizeof(CachedGlyph *) * length);
+        if (!glyphs) return -1;
+    }
+
     int total_width = 0;
     for (int i = 0; i < length; i++) {
         unsigned char c = (unsigned char)string[i];
         CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
+        glyphs[i] = cg;
         if (cg) total_width += cg->advance_x;
     }
 
@@ -873,8 +998,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         int cur_x = dev_pen_x;
 
         for (int i = 0; i < length; i++) {
-            unsigned char c = (unsigned char)string[i];
-            CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
+            CachedGlyph *cg = glyphs[i];
             if (!cg || cg->rows == 0 || cg->width == 0) {
                 if (cg) cur_x += cg->advance_x;
                 continue;
@@ -906,6 +1030,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         }
 
         if (min_x > max_x || min_y > max_y) {
+            if (glyphs != glyphs_buf) free(glyphs);
             return 0; // Nothing visible to draw
         }
 
@@ -942,75 +1067,137 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                     if (local_gc && !x_error_trap) {
                         XImage *img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
                         if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
-                            if (bk_mode == 2) {
-                                unsigned long bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
-                                int bx0 = dev_pen_x - min_x;
-                                int by0 = dev_y - min_y;
-                                int bx1 = bx0 + total_width;
-                                int by1 = by0 + font_height;
+                            int is_fast_32 = (img->bits_per_pixel == 32 &&
+                                              img->red_mask == 0x00FF0000 &&
+                                              img->green_mask == 0x0000FF00 &&
+                                              img->blue_mask == 0x000000FF);
 
-                                if (bx0 < 0) bx0 = 0;
-                                if (by0 < 0) by0 = 0;
-                                if (bx1 > bbox_w) bx1 = bbox_w;
-                                if (by1 > bbox_h) by1 = bbox_h;
+                            int bx0 = dev_pen_x - min_x;
+                            int by0 = dev_y - min_y;
+                            int bx1 = bx0 + total_width;
+                            int by1 = by0 + font_height;
 
-                                for (int py = by0; py < by1; py++) {
-                                    for (int px = bx0; px < bx1; px++) {
-                                        XPutPixel(img, px, py, bk_pixel);
-                                    }
-                                }
-                            }
+                            if (bx0 < 0) bx0 = 0;
+                            if (by0 < 0) by0 = 0;
+                            if (bx1 > bbox_w) bx1 = bbox_w;
+                            if (by1 > bbox_h) by1 = bbox_h;
 
-                            unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
-                            cur_x = dev_pen_x;
-
-                            for (int i = 0; i < length; i++) {
-                                unsigned char c = (unsigned char)string[i];
-                                CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
-                                if (!cg) continue;
-
-                                if (cg->buffer && cg->rows > 0 && cg->width > 0) {
-                                    int gx0 = cur_x + cg->bitmap_left - min_x;
-                                    int gy0 = dev_pen_y - cg->bitmap_top - min_y;
-
-                                    for (int row = 0; row < cg->rows; row++) {
-                                        int py = gy0 + row;
-                                        if (py < 0 || py >= bbox_h) continue;
-                                        unsigned char *src = cg->buffer + row * cg->pitch;
-
-                                        for (int col = 0; col < cg->width; col++) {
-                                            unsigned int alpha = src[col];
-                                            if (alpha < 24) continue;
-
-                                            int px = gx0 + col;
-                                            if (px < 0 || px >= bbox_w) continue;
-
-                                            if (alpha >= 224) {
-                                                XPutPixel(img, px, py, fg_pixel);
-                                            } else {
-                                                unsigned long bg = XGetPixel(img, px, py);
-                                                unsigned int cur_bg_r = (bg >> 16) & 0xFF;
-                                                unsigned int cur_bg_g = (bg >> 8) & 0xFF;
-                                                unsigned int cur_bg_b = bg & 0xFF;
-
-                                                unsigned int out_r = (fg_r * alpha + cur_bg_r * (255 - alpha)) / 255;
-                                                unsigned int out_g = (fg_g * alpha + cur_bg_g * (255 - alpha)) / 255;
-                                                unsigned int out_b = (fg_b * alpha + cur_bg_b * (255 - alpha)) / 255;
-
-                                                XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
-                                            }
+                            if (is_fast_32) {
+                                if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
+                                    uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                    for (int py = by0; py < by1; py++) {
+                                        uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                                        for (int px = bx0; px < bx1; px++) {
+                                            dst_row[px] = bk_pixel;
                                         }
                                     }
                                 }
-                                cur_x += cg->advance_x;
+
+                                uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
+                                cur_x = dev_pen_x;
+
+                                for (int i = 0; i < length; i++) {
+                                    CachedGlyph *cg = glyphs[i];
+                                    if (!cg) continue;
+
+                                    if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                                        int gx0 = cur_x + cg->bitmap_left - min_x;
+                                        int gy0 = dev_pen_y - cg->bitmap_top - min_y;
+
+                                        for (int row = 0; row < cg->rows; row++) {
+                                            int py = gy0 + row;
+                                            if (py < 0 || py >= bbox_h) continue;
+                                            uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                                            const unsigned char *src = cg->buffer + row * cg->pitch;
+
+                                            for (int col = 0; col < cg->width; col++) {
+                                                unsigned int alpha = src[col];
+                                                if (alpha < 24) continue;
+
+                                                int px = gx0 + col;
+                                                if (px < 0 || px >= bbox_w) continue;
+
+                                                if (alpha >= 224) {
+                                                    dst_row[px] = fg_pixel;
+                                                } else {
+                                                    uint32_t bg = dst_row[px];
+                                                    unsigned int cur_bg_r = (bg >> 16) & 0xFF;
+                                                    unsigned int cur_bg_g = (bg >> 8) & 0xFF;
+                                                    unsigned int cur_bg_b = bg & 0xFF;
+
+                                                    unsigned int inv_a = 255 - alpha;
+                                                    unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
+                                                    unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
+                                                    unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
+
+                                                    dst_row[px] = (out_r << 16) | (out_g << 8) | out_b;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    cur_x += cg->advance_x;
+                                }
+                            } else {
+                                if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
+                                    unsigned long bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                    for (int py = by0; py < by1; py++) {
+                                        for (int px = bx0; px < bx1; px++) {
+                                            XPutPixel(img, px, py, bk_pixel);
+                                        }
+                                    }
+                                }
+
+                                unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
+                                cur_x = dev_pen_x;
+
+                                for (int i = 0; i < length; i++) {
+                                    CachedGlyph *cg = glyphs[i];
+                                    if (!cg) continue;
+
+                                    if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                                        int gx0 = cur_x + cg->bitmap_left - min_x;
+                                        int gy0 = dev_pen_y - cg->bitmap_top - min_y;
+
+                                        for (int row = 0; row < cg->rows; row++) {
+                                            int py = gy0 + row;
+                                            if (py < 0 || py >= bbox_h) continue;
+                                            unsigned char *src = cg->buffer + row * cg->pitch;
+
+                                            for (int col = 0; col < cg->width; col++) {
+                                                unsigned int alpha = src[col];
+                                                if (alpha < 24) continue;
+
+                                                int px = gx0 + col;
+                                                if (px < 0 || px >= bbox_w) continue;
+
+                                                if (alpha >= 224) {
+                                                    XPutPixel(img, px, py, fg_pixel);
+                                                } else {
+                                                    unsigned long bg = XGetPixel(img, px, py);
+                                                    unsigned int cur_bg_r = (bg >> 16) & 0xFF;
+                                                    unsigned int cur_bg_g = (bg >> 8) & 0xFF;
+                                                    unsigned int cur_bg_b = bg & 0xFF;
+
+                                                    unsigned int inv_a = 255 - alpha;
+                                                    unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
+                                                    unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
+                                                    unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
+
+                                                    XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    cur_x += cg->advance_x;
+                                }
                             }
 
                             XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
-                            XSync(dpy, False);
                             XDestroyImage(img);
                             XFreeGC(dpy, local_gc);
                             XSync(dpy, False);
                             XSetErrorHandler(prev_handler);
+                            if (glyphs != glyphs_buf) free(glyphs);
                             return 0; // Ultra-fast single block blit succeeded!
                         }
                         if (img) XDestroyImage(img);
@@ -1024,20 +1211,6 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     }
 
     if (bk_mode == 2) {
-        typedef void *HGDIOBJ;
-        typedef struct { int left, top, right, bottom; } RECT;
-        typedef HGDIOBJ (*real_createsolidbrush_t)(uint32_t crColor);
-        typedef int (*real_fillrect_t)(void *hdc, const RECT *lprc, HGDIOBJ hbr);
-        typedef int (*real_deleteobject_t)(HGDIOBJ hObject);
-
-        static real_createsolidbrush_t real_createsolidbrush = NULL;
-        static real_fillrect_t real_fillrect = NULL;
-        static real_deleteobject_t real_deleteobject = NULL;
-
-        if (!real_createsolidbrush) real_createsolidbrush = (real_createsolidbrush_t)dlsym(RTLD_NEXT, "CreateSolidBrush");
-        if (!real_fillrect) real_fillrect = (real_fillrect_t)dlsym(RTLD_NEXT, "FillRect");
-        if (!real_deleteobject) real_deleteobject = (real_deleteobject_t)dlsym(RTLD_NEXT, "DeleteObject");
-
         if (real_createsolidbrush && real_fillrect && real_deleteobject) {
             RECT rc = { pen_x, y, pen_x + total_width, y + font_height };
             HGDIOBJ hbr = real_createsolidbrush(bk_color);
@@ -1049,8 +1222,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     }
 
     for (int i = 0; i < length; i++) {
-        unsigned char c = (unsigned char)string[i];
-        CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
+        CachedGlyph *cg = glyphs[i];
         if (!cg) continue;
 
         if (cg->buffer && cg->rows > 0 && cg->width > 0) {
@@ -1069,9 +1241,10 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                     if (alpha >= 224) {
                         real_setpixel(hdc, px, py, fg_color);
                     } else if (bk_mode == 2) {
-                        unsigned int out_r = (fg_r * alpha + bk_r * (255 - alpha)) / 255;
-                        unsigned int out_g = (fg_g * alpha + bk_g * (255 - alpha)) / 255;
-                        unsigned int out_b = (fg_b * alpha + bk_b * (255 - alpha)) / 255;
+                        unsigned int inv_a = 255 - alpha;
+                        unsigned int out_r = (fg_r * alpha + bk_r * inv_a + 128) >> 8;
+                        unsigned int out_g = (fg_g * alpha + bk_g * inv_a + 128) >> 8;
+                        unsigned int out_b = (fg_b * alpha + bk_b * inv_a + 128) >> 8;
                         uint32_t blended = (out_r) | (out_g << 8) | (out_b << 16);
                         real_setpixel(hdc, px, py, blended);
                     } else {
@@ -1085,9 +1258,10 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                         unsigned int cur_bg_g = (bg >> 8) & 0xFF;
                         unsigned int cur_bg_b = (bg >> 16) & 0xFF;
 
-                        unsigned int out_r = (fg_r * alpha + cur_bg_r * (255 - alpha)) / 255;
-                        unsigned int out_g = (fg_g * alpha + cur_bg_g * (255 - alpha)) / 255;
-                        unsigned int out_b = (fg_b * alpha + cur_bg_b * (255 - alpha)) / 255;
+                        unsigned int inv_a = 255 - alpha;
+                        unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
+                        unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
+                        unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
 
                         uint32_t blended = (out_r) | (out_g << 8) | (out_b << 16);
                         real_setpixel(hdc, px, py, blended);
@@ -1098,6 +1272,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         pen_x += cg->advance_x;
     }
 
+    if (glyphs != glyphs_buf) free(glyphs);
     return 0;
 }
 
@@ -1114,8 +1289,7 @@ int DrawTextA(void *hdc, const char *lpString, int nCount, void *lpRect, unsigne
 int ExtTextOut(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
     if (!real_exttextout) real_exttextout = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOut");
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         if (draw_text_hdc_aa(hdc, x, y, lpString, (int)cbCount) == 0) {
             return 1;
         }
@@ -1127,8 +1301,7 @@ int ExtTextOut(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc
 int ExtTextOutA(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
     if (!real_exttextouta) real_exttextouta = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOutA");
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         if (draw_text_hdc_aa(hdc, x, y, lpString, (int)cbCount) == 0) {
             return 1;
         }
@@ -1140,8 +1313,7 @@ int ExtTextOutA(void *hdc, int x, int y, unsigned int fuOptions, const void *lpr
 int TextOut(void *hdc, int x, int y, const char *lpString, int nCount) {
     if (!real_textout) real_textout = (real_textout_t)dlsym(RTLD_NEXT, "TextOut");
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         int len = nCount >= 0 ? nCount : (lpString ? (int)strlen(lpString) : 0);
         if (draw_text_hdc_aa(hdc, x, y, lpString, len) == 0) {
             return 1;
@@ -1154,8 +1326,7 @@ int TextOut(void *hdc, int x, int y, const char *lpString, int nCount) {
 int TextOutA(void *hdc, int x, int y, const char *lpString, int nCount) {
     if (!real_textouta) real_textouta = (real_textout_t)dlsym(RTLD_NEXT, "TextOutA");
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         int len = nCount >= 0 ? nCount : (lpString ? (int)strlen(lpString) : 0);
         if (draw_text_hdc_aa(hdc, x, y, lpString, len) == 0) {
             return 1;
@@ -1170,8 +1341,7 @@ int XDrawString(Display *dpy, Drawable d, GC gc, int x, int y, const char *strin
         real_xdrawstring = (real_xdrawstring_t)dlsym(RTLD_NEXT, "XDrawString");
     }
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         if (draw_text_aa(dpy, d, gc, x, y, string, length, 0) == 0) {
             return 0;
         }
@@ -1188,8 +1358,7 @@ int XDrawImageString(Display *dpy, Drawable d, GC gc, int x, int y, const char *
         real_xdrawimagestring = (real_xdrawimagestring_t)dlsym(RTLD_NEXT, "XDrawImageString");
     }
 
-    const char *no_aa = getenv("EXILE_NO_AA");
-    if (!no_aa || strcmp(no_aa, "1") != 0) {
+    if (!is_no_aa()) {
         if (draw_text_aa(dpy, d, gc, x, y, string, length, 1) == 0) {
             return 0;
         }
@@ -1203,15 +1372,17 @@ int XDrawImageString(Display *dpy, Drawable d, GC gc, int x, int y, const char *
 
 __attribute__((constructor))
 static void init_exile3_shim(void) {
-    FILE *plog = fopen("/home/lavac/exile3-linux-1/probe.log", "a");
-    if (plog) {
-        fprintf(plog, "init_exile3_shim called!\n");
-        fclose(plog);
-    }
     real_ioctl = (real_ioctl_t)dlsym(RTLD_NEXT, "ioctl");
     real_msgbox = (real_msgbox_t)dlsym(RTLD_NEXT, "MessageBox");
     real_xdrawstring = (real_xdrawstring_t)dlsym(RTLD_NEXT, "XDrawString");
     real_xdrawimagestring = (real_xdrawimagestring_t)dlsym(RTLD_NEXT, "XDrawImageString");
+    real_drawtext = (real_drawtext_t)dlsym(RTLD_NEXT, "DrawText");
+    real_drawtexta = (real_drawtext_t)dlsym(RTLD_NEXT, "DrawTextA");
+    real_exttextout = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOut");
+    real_exttextouta = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOutA");
+    real_textout = (real_textout_t)dlsym(RTLD_NEXT, "TextOut");
+    real_textouta = (real_textout_t)dlsym(RTLD_NEXT, "TextOutA");
+    resolve_gdi_symbols();
     reset_sounds_fucked();
     init_freetype();
 }

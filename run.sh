@@ -15,9 +15,6 @@ USE_DOCKER=false
 COLOR_DEPTH=24
 AA_MODE="grayscale"
 DOCKER_IMAGE="${EXILE_DOCKER_IMAGE:-ghcr.io/lavacano/exile3:latest}"
-if docker image inspect exile3:latest >/dev/null 2>&1; then
-    DOCKER_IMAGE="exile3:latest"
-fi
 
 print_help() {
     cat << 'EOF'
@@ -169,6 +166,9 @@ if [ "$USE_GAMESCOPE" = true ]; then
     fi
 
     if [ "$USE_DOCKER" = true ]; then
+        if docker image inspect exile3:latest >/dev/null 2>&1; then
+            DOCKER_IMAGE="exile3:latest"
+        fi
         exec gamescope "${GS_ARGS[@]}" -- bash -c '
             xhost + >/dev/null 2>&1 || true
             mkdir -p "'"$DIR"'/saves"
@@ -194,11 +194,11 @@ if [ "$USE_GAMESCOPE" = true ]; then
                 pkill -9 -f "Xephyr :2" 2>/dev/null || true
             }
             trap cleanup EXIT INT TERM
-            for i in $(seq 1 50); do
-                if distrobox enter exile3 -- xdpyinfo -display :2 >/dev/null 2>&1; then
+            for i in $(seq 1 60); do
+                if [ -S /tmp/.X11-unix/X2 ]; then
                     break
                 fi
-                sleep 0.1
+                sleep 0.05
             done
             distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && padsp '"$BIN"'"
             cleanup
@@ -224,6 +224,9 @@ else
     fi
 
     if [ "$USE_DOCKER" = true ]; then
+        if docker image inspect exile3:latest >/dev/null 2>&1; then
+            DOCKER_IMAGE="exile3:latest"
+        fi
         xhost + >/dev/null 2>&1 || true
         mkdir -p "$DIR/saves"
         exec docker run --rm -i --net=host --ipc=host \
@@ -241,7 +244,7 @@ else
         distrobox enter exile3 -- pkill -9 -f "Xephyr :1" 2>/dev/null || true
         pkill -9 -f "Xephyr :1" 2>/dev/null || true
         rm -f /tmp/.X11-unix/X1 2>/dev/null || true
-        sleep 0.2
+        sleep 0.1
 
         distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" -title "$TITLE" -ac -fp "$DIR/fonts" &
         XEPHYR_PID=$!
@@ -253,11 +256,11 @@ else
         }
         trap cleanup EXIT INT TERM
 
-        for i in $(seq 1 50); do
-            if distrobox enter exile3 -- xdpyinfo -display :1 >/dev/null 2>&1; then
+        for i in $(seq 1 60); do
+            if [ -S /tmp/.X11-unix/X1 ]; then
                 break
             fi
-            sleep 0.1
+            sleep 0.05
         done
 
         distrobox enter exile3 -- sh -c "cd '$DIR' && export DISPLAY=:1 && export EXILE_PATH='$DIR' && export LD_LIBRARY_PATH='$DIR' && export LD_PRELOAD='$DIR/libexile3audio.so' && export EXILE_AA='$AA_MODE' && export EXILE_NO_AA='$NO_AA_VAL' && padsp '$BIN'"

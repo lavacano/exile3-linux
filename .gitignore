@@ -3,5 +3,6 @@
 *.xwd
 
 # Save game files (keep directory)
+*.sav
 saves/*.sav
 !saves/.gitkeep
