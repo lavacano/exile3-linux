@@ -40,7 +40,15 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
     void *arg = va_arg(ap, void *);
     va_end(ap);
 
+    if (!real_ioctl) {
+        real_ioctl = (real_ioctl_t)dlsym(RTLD_NEXT, "ioctl");
+    }
+
     if (request == SNDCTL_DSP_GETOSPACE) {
+        int ret = 0;
+        if (real_ioctl) {
+            ret = real_ioctl(fd, request, arg);
+        }
         struct audio_buf_info *info = (struct audio_buf_info *)arg;
         if (info) {
             /* Force available buffer space so Exile III never starves or triggers sounds_fucked */
@@ -50,52 +58,23 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
             info->bytes = 32768;
         }
         reset_sounds_fucked();
-        return 0;
+        return ret;
     }
 
     /* Prevent padsp from blocking the main game engine loop on sound playback */
-    if (request == SNDCTL_DSP_NONBLOCK || request == SNDCTL_DSP_POST || request == SNDCTL_DSP_SYNC) {
+    if (request == SNDCTL_DSP_NONBLOCK) {
         reset_sounds_fucked();
         return 0;
     }
 
-    if (request == SNDCTL_DSP_RESET) {
+    if (request == SNDCTL_DSP_RESET || request == SNDCTL_DSP_SYNC) {
         reset_sounds_fucked();
-    }
-
-    if (__builtin_expect(!real_ioctl, 0)) {
-        real_ioctl = (real_ioctl_t)dlsym(RTLD_NEXT, "ioctl");
     }
 
     if (real_ioctl) {
         return real_ioctl(fd, request, arg);
     }
 
-    return 0;
-}
-
-#include <sched.h>
-#include <time.h>
-#include <sys/prctl.h>
-
-__attribute__((visibility("default"))) void Sleep(uint32_t dwMilliseconds) {
-    if (dwMilliseconds == 0) {
-        sched_yield();
-        return;
-    }
-    struct timespec ts;
-    ts.tv_sec = dwMilliseconds / 1000;
-    ts.tv_nsec = (dwMilliseconds % 1000) * 1000000L;
-    nanosleep(&ts, NULL);
-}
-
-__attribute__((visibility("default"))) void LogError(int err, void *ptr) {
-}
-
-__attribute__((visibility("default"))) void LogParamError(int err, void *ptr, ...) {
-}
-
-__attribute__((visibility("default"))) int logstr(int level, ...) {
     return 0;
 }
 
@@ -1644,7 +1623,6 @@ static void init_exile3_shim(void) {
     real_textouta = (real_textout_t)dlsym(RTLD_NEXT, "TextOutA");
     resolve_gdi_symbols();
     reset_sounds_fucked();
-    prctl(PR_SET_TIMERSLACK, 1, 0, 0, 0);
     init_freetype();
     prewarm_font_cache();
 }
