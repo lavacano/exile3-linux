@@ -28,7 +28,7 @@ if [ "$EXILE_8BIT" = "1" ]; then
 fi
 
 echo "Starting Xephyr ${DEPTH}-bit TrueColor server on :$NESTED_DISP..."
-Xephyr ":$NESTED_DISP" -screen "640x480x$DEPTH" -title "$TITLE" -ac -fp /game/fonts &
+Xephyr ":$NESTED_DISP" -screen "640x480x$DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp /game/fonts &
 XEP_PID=$!
 
 cleanup() {
@@ -39,11 +39,11 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Wait for Xephyr to be ready
-for i in $(seq 1 50); do
-    if xdpyinfo -display ":$NESTED_DISP" >/dev/null 2>&1; then
+for i in $(seq 1 60); do
+    if [ -S "/tmp/.X11-unix/X$NESTED_DISP" ]; then
         break
     fi
-    sleep 0.1
+    sleep 0.05
 done
 
 export DISPLAY=":$NESTED_DISP"

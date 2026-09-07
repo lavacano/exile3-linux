@@ -611,6 +611,10 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     unsigned int fg_g = (fg >> 8) & 0xFF;
     unsigned int fg_b = fg & 0xFF;
 
+    uint32_t fg_val = (fg_r << 16) | (fg_g << 8) | fg_b;
+    uint32_t rb_fg = fg_val & 0x00FF00FF;
+    uint32_t g_fg  = (fg_val >> 8) & 0x000000FF;
+
     if (is_fast_32) {
         if (is_image_string) {
             uint32_t bg_val = (uint32_t)values.background;
@@ -622,7 +626,6 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
             }
         }
 
-        uint32_t fg_val = (fg_r << 16) | (fg_g << 8) | fg_b;
         pen_x = x;
         for (int i = 0; i < length; i++) {
             CachedGlyph *cg = glyphs[i];
@@ -632,33 +635,33 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
                 int gx0 = pen_x + cg->bitmap_left - min_x;
                 int gy0 = y - cg->bitmap_top - min_y;
 
-                for (int row = 0; row < cg->rows; row++) {
-                    int py = gy0 + row;
-                    if (py < 0 || py >= bbox_h) continue;
-                    uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                    const unsigned char *src = cg->buffer + row * cg->pitch;
+                int r_start = (gy0 < 0) ? -gy0 : 0;
+                int r_end = (gy0 + cg->rows > bbox_h) ? (bbox_h - gy0) : cg->rows;
+                int c_start = (gx0 < 0) ? -gx0 : 0;
+                int c_end = (gx0 + cg->width > bbox_w) ? (bbox_w - gx0) : cg->width;
 
-                    for (int col = 0; col < cg->width; col++) {
-                        unsigned int alpha = src[col];
-                        if (alpha < 24) continue;
+                if (r_start < r_end && c_start < c_end) {
+                    for (int row = r_start; row < r_end; row++) {
+                        int py = gy0 + row;
+                        uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                        const unsigned char *src = cg->buffer + row * cg->pitch;
 
-                        int px = gx0 + col;
-                        if (px < 0 || px >= bbox_w) continue;
+                        for (int col = c_start; col < c_end; col++) {
+                            unsigned int alpha = src[col];
+                            if (alpha < 24) continue;
 
-                        if (alpha >= 224) {
-                            dst_row[px] = fg_val;
-                        } else {
-                            uint32_t bg = dst_row[px];
-                            unsigned int bg_r = (bg >> 16) & 0xFF;
-                            unsigned int bg_g = (bg >> 8) & 0xFF;
-                            unsigned int bg_b = bg & 0xFF;
-
-                            unsigned int inv_a = 255 - alpha;
-                            unsigned int out_r = (fg_r * alpha + bg_r * inv_a + 128) >> 8;
-                            unsigned int out_g = (fg_g * alpha + bg_g * inv_a + 128) >> 8;
-                            unsigned int out_b = (fg_b * alpha + bg_b * inv_a + 128) >> 8;
-
-                            dst_row[px] = (out_r << 16) | (out_g << 8) | out_b;
+                            int px = gx0 + col;
+                            if (alpha >= 224) {
+                                dst_row[px] = fg_val;
+                            } else {
+                                uint32_t bg = dst_row[px];
+                                uint32_t rb_bg = bg & 0x00FF00FF;
+                                uint32_t g_bg  = (bg >> 8) & 0x000000FF;
+                                unsigned int inv_a = 255 - alpha;
+                                uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                dst_row[px] = rb | (g << 8);
+                            }
                         }
                     }
                 }
@@ -719,7 +722,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
 
     XPutImage(dpy, d, gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
     XDestroyImage(img);
-    XSync(dpy, False);
+    XFlush(dpy);
     XSetErrorHandler(prev_handler);
     if (glyphs != glyphs_buf) free(glyphs);
     return 0;
@@ -1077,7 +1080,21 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                 int bbox_h = max_y - min_y;
 
                 if (bbox_w > 0 && bbox_h > 0) {
-                    GC local_gc = XCreateGC(dpy, win_d, 0, NULL);
+                    static GC cached_hdc_gc = 0;
+                    static Display *cached_hdc_dpy = NULL;
+                    static Drawable cached_hdc_win = 0;
+
+                    if (!cached_hdc_gc || cached_hdc_dpy != dpy || cached_hdc_win != win_d) {
+                        if (cached_hdc_gc && cached_hdc_dpy) {
+                            XFreeGC(cached_hdc_dpy, cached_hdc_gc);
+                            cached_hdc_gc = 0;
+                        }
+                        cached_hdc_gc = XCreateGC(dpy, win_d, 0, NULL);
+                        cached_hdc_dpy = dpy;
+                        cached_hdc_win = win_d;
+                    }
+                    GC local_gc = cached_hdc_gc;
+
                     if (local_gc && !x_error_trap) {
                         XImage *img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
                         if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
@@ -1108,6 +1125,8 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                 }
 
                                 uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
+                                uint32_t rb_fg = fg_pixel & 0x00FF00FF;
+                                uint32_t g_fg  = (fg_pixel >> 8) & 0x000000FF;
                                 cur_x = dev_pen_x;
 
                                 for (int i = 0; i < length; i++) {
@@ -1118,33 +1137,33 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                         int gx0 = cur_x + cg->bitmap_left - min_x;
                                         int gy0 = dev_pen_y - cg->bitmap_top - min_y;
 
-                                        for (int row = 0; row < cg->rows; row++) {
-                                            int py = gy0 + row;
-                                            if (py < 0 || py >= bbox_h) continue;
-                                            uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                                            const unsigned char *src = cg->buffer + row * cg->pitch;
+                                        int r_start = (gy0 < 0) ? -gy0 : 0;
+                                        int r_end = (gy0 + cg->rows > bbox_h) ? (bbox_h - gy0) : cg->rows;
+                                        int c_start = (gx0 < 0) ? -gx0 : 0;
+                                        int c_end = (gx0 + cg->width > bbox_w) ? (bbox_w - gx0) : cg->width;
 
-                                            for (int col = 0; col < cg->width; col++) {
-                                                unsigned int alpha = src[col];
-                                                if (alpha < 24) continue;
+                                        if (r_start < r_end && c_start < c_end) {
+                                            for (int row = r_start; row < r_end; row++) {
+                                                int py = gy0 + row;
+                                                uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                                                const unsigned char *src = cg->buffer + row * cg->pitch;
 
-                                                int px = gx0 + col;
-                                                if (px < 0 || px >= bbox_w) continue;
+                                                for (int col = c_start; col < c_end; col++) {
+                                                    unsigned int alpha = src[col];
+                                                    if (alpha < 24) continue;
 
-                                                if (alpha >= 224) {
-                                                    dst_row[px] = fg_pixel;
-                                                } else {
-                                                    uint32_t bg = dst_row[px];
-                                                    unsigned int cur_bg_r = (bg >> 16) & 0xFF;
-                                                    unsigned int cur_bg_g = (bg >> 8) & 0xFF;
-                                                    unsigned int cur_bg_b = bg & 0xFF;
-
-                                                    unsigned int inv_a = 255 - alpha;
-                                                    unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
-                                                    unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
-                                                    unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
-
-                                                    dst_row[px] = (out_r << 16) | (out_g << 8) | out_b;
+                                                    int px = gx0 + col;
+                                                    if (alpha >= 224) {
+                                                        dst_row[px] = fg_pixel;
+                                                    } else {
+                                                        uint32_t bg = dst_row[px];
+                                                        uint32_t rb_bg = bg & 0x00FF00FF;
+                                                        uint32_t g_bg  = (bg >> 8) & 0x000000FF;
+                                                        unsigned int inv_a = 255 - alpha;
+                                                        uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                                        uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                                        dst_row[px] = rb | (g << 8);
+                                                    }
                                                 }
                                             }
                                         }
@@ -1208,14 +1227,17 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
 
                             XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
                             XDestroyImage(img);
-                            XFreeGC(dpy, local_gc);
-                            XSync(dpy, False);
+                            XFlush(dpy);
                             XSetErrorHandler(prev_handler);
                             if (glyphs != glyphs_buf) free(glyphs);
                             return 0; // Ultra-fast single block blit succeeded!
                         }
                         if (img) XDestroyImage(img);
-                        XFreeGC(dpy, local_gc);
+                    }
+                    if (x_error_trap) {
+                        cached_hdc_gc = 0;
+                        cached_hdc_dpy = NULL;
+                        cached_hdc_win = 0;
                     }
                 }
             }

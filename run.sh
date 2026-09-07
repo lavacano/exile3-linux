@@ -190,9 +190,9 @@ if [ "$USE_GAMESCOPE" = true ]; then
             distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" +bs -nolisten tcp -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" &
             XEP_PID=$!
             cleanup() {
-                distrobox enter exile3 -- pkill -9 -f "Xephyr :2" 2>/dev/null || true
                 kill -9 $XEP_PID 2>/dev/null || true
                 pkill -9 -f "Xephyr :2" 2>/dev/null || true
+                rm -f /tmp/.X11-unix/X2 2>/dev/null || true
             }
             trap cleanup EXIT INT TERM
             for i in $(seq 1 60); do
@@ -252,9 +252,9 @@ else
         XEPHYR_PID=$!
 
         cleanup() {
-            distrobox enter exile3 -- pkill -9 -f "Xephyr :1" 2>/dev/null || true
             kill -9 "$XEPHYR_PID" 2>/dev/null || true
             pkill -9 -f "Xephyr :1" 2>/dev/null || true
+            rm -f /tmp/.X11-unix/X1 2>/dev/null || true
         }
         trap cleanup EXIT INT TERM
 
