@@ -50,6 +50,9 @@ export DISPLAY=":$NESTED_DISP"
 export EXILE_PATH="/game"
 export LD_LIBRARY_PATH="/game"
 export LD_PRELOAD="/game/libexile3audio.so"
+export PULSE_LATENCY_MSEC=30
+export PADSP_NO_MIXER=1
+export PADSP_NO_SNDSTAT=1
 
 echo "Launching $TITLE..."
 padsp "$BIN"

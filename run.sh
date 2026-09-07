@@ -201,7 +201,7 @@ if [ "$USE_GAMESCOPE" = true ]; then
                 fi
                 sleep 0.05
             done
-            distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && padsp '"$BIN"'"
+            distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '"$BIN"'"
             cleanup
         '
     fi
@@ -265,7 +265,7 @@ else
             sleep 0.05
         done
 
-        distrobox enter exile3 -- sh -c "cd '$DIR' && export DISPLAY=:1 && export EXILE_PATH='$DIR' && export LD_LIBRARY_PATH='$DIR' && export LD_PRELOAD='$DIR/libexile3audio.so' && export EXILE_AA='$AA_MODE' && export EXILE_NO_AA='$NO_AA_VAL' && padsp '$BIN'"
+        distrobox enter exile3 -- sh -c "cd '$DIR' && export DISPLAY=:1 && export EXILE_PATH='$DIR' && export LD_LIBRARY_PATH='$DIR' && export LD_PRELOAD='$DIR/libexile3audio.so' && export EXILE_AA='$AA_MODE' && export EXILE_NO_AA='$NO_AA_VAL' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '$BIN'"
         cleanup
     fi
 

@@ -34,7 +34,7 @@ static inline void reset_sounds_fucked(void) {
     }
 }
 
-int ioctl(int fd, unsigned long request, ...) {
+__attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, ...) {
     va_list ap;
     va_start(ap, request);
     void *arg = va_arg(ap, void *);
@@ -492,7 +492,7 @@ static int quiet_x_error_handler(Display *d, XErrorEvent *e) {
     return 0;
 }
 
-XErrorHandler XSetErrorHandler(XErrorHandler handler) {
+__attribute__((visibility("default"))) XErrorHandler XSetErrorHandler(XErrorHandler handler) {
     static XErrorHandler (*real_xseterrorhandler)(XErrorHandler) = NULL;
     if (!real_xseterrorhandler) {
         real_xseterrorhandler = (XErrorHandler (*)(XErrorHandler))dlsym(RTLD_NEXT, "XSetErrorHandler");
@@ -552,10 +552,31 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
 
     if (pen_x > max_x) max_x = pen_x;
 
-    min_x -= 1;
-    min_y -= 1;
-    max_x += 1;
-    max_y += 1;
+    int is_pure_opaque = 0;
+    if (is_image_string) {
+        int bg_left = x;
+        int bg_right = pen_x;
+        int bg_top = y - font_ascent;
+        int bg_bottom = y + (font_size - font_ascent);
+
+        if (min_x >= bg_left && max_x <= bg_right && min_y >= bg_top && max_y <= bg_bottom) {
+            is_pure_opaque = 1;
+            min_x = bg_left;
+            max_x = bg_right;
+            min_y = bg_top;
+            max_y = bg_bottom;
+        } else {
+            min_x -= 1;
+            min_y -= 1;
+            max_x += 1;
+            max_y += 1;
+        }
+    } else {
+        min_x -= 1;
+        min_y -= 1;
+        max_x += 1;
+        max_y += 1;
+    }
 
     Window root;
     int rx = 0, ry = 0;
@@ -584,7 +605,19 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
         return 0;
     }
 
-    XImage *img = XGetImage(dpy, d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+    XImage *img = NULL;
+    if (is_pure_opaque) {
+        uint32_t *data = (uint32_t *)malloc(bbox_w * bbox_h * sizeof(uint32_t));
+        if (data) {
+            uint32_t bg_val = (uint32_t)values.background;
+            for (int i = 0; i < bbox_w * bbox_h; i++) data[i] = bg_val;
+            Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
+            img = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)data, bbox_w, bbox_h, 32, bbox_w * 4);
+        }
+    }
+    if (!img) {
+        img = XGetImage(dpy, d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+    }
     if (x_error_trap || !img) {
         if (img) XDestroyImage(img);
         XSync(dpy, False);
@@ -616,7 +649,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     uint32_t g_fg  = (fg_val >> 8) & 0x000000FF;
 
     if (is_fast_32) {
-        if (is_image_string) {
+        if (!is_pure_opaque && is_image_string) {
             uint32_t bg_val = (uint32_t)values.background;
             for (int py = 0; py < bbox_h; py++) {
                 uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
@@ -883,7 +916,7 @@ static real_exttextout_t real_exttextouta = NULL;
 static real_textout_t real_textout = NULL;
 static real_textout_t real_textouta = NULL;
 
-int MessageBox(void *hWnd, const char *lpText, const char *lpCaption, unsigned int uType) {
+__attribute__((visibility("default"))) int MessageBox(void *hWnd, const char *lpText, const char *lpCaption, unsigned int uType) {
     if (lpText && strstr(lpText, "/dev/dsp")) {
         return 1;
     }
@@ -891,7 +924,7 @@ int MessageBox(void *hWnd, const char *lpText, const char *lpCaption, unsigned i
     return real_msgbox ? real_msgbox(hWnd, lpText, lpCaption, uType) : 1;
 }
 
-int MessageBoxA(void *hWnd, const char *lpText, const char *lpCaption, unsigned int uType) {
+__attribute__((visibility("default"))) int MessageBoxA(void *hWnd, const char *lpText, const char *lpCaption, unsigned int uType) {
     return MessageBox(hWnd, lpText, lpCaption, uType);
 }
 
@@ -977,11 +1010,29 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     }
 
     int total_width = 0;
+    int rel_min_x = 0x7FFFFFFF, rel_min_y = 0x7FFFFFFF;
+    int rel_max_x = -0x7FFFFFFF, rel_max_y = -0x7FFFFFFF;
+    int has_pixels = 0;
+
     for (int i = 0; i < length; i++) {
         unsigned char c = (unsigned char)string[i];
         CachedGlyph *cg = get_cached_glyph(is_bold, render_height, c);
         glyphs[i] = cg;
-        if (cg) total_width += cg->advance_x;
+        if (cg) {
+            if (cg->rows > 0 && cg->width > 0) {
+                int gx0 = total_width + cg->bitmap_left;
+                int gy0 = -cg->bitmap_top;
+                int gx1 = gx0 + cg->width;
+                int gy1 = gy0 + cg->rows;
+
+                if (gx0 < rel_min_x) rel_min_x = gx0;
+                if (gy0 < rel_min_y) rel_min_y = gy0;
+                if (gx1 > rel_max_x) rel_max_x = gx1;
+                if (gy1 > rel_max_y) rel_max_y = gy1;
+                has_pixels = 1;
+            }
+            total_width += cg->advance_x;
+        }
     }
 
     int pen_x = x;
@@ -1010,51 +1061,45 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         int dev_pen_y = pen_y + org[1];
         int dev_y = y + org[1];
 
-        int min_x = 0x7FFFFFFF, min_y = 0x7FFFFFFF;
-        int max_x = -0x7FFFFFFF, max_y = -0x7FFFFFFF;
-        int cur_x = dev_pen_x;
+        int min_x = has_pixels ? (dev_pen_x + rel_min_x) : dev_pen_x;
+        int max_x = has_pixels ? (dev_pen_x + rel_max_x) : dev_pen_x;
+        int min_y = has_pixels ? (dev_pen_y + rel_min_y) : dev_pen_y;
+        int max_y = has_pixels ? (dev_pen_y + rel_max_y) : dev_pen_y;
 
-        for (int i = 0; i < length; i++) {
-            CachedGlyph *cg = glyphs[i];
-            if (!cg || cg->rows == 0 || cg->width == 0) {
-                if (cg) cur_x += cg->advance_x;
-                continue;
-            }
-
-            int gx0 = cur_x + cg->bitmap_left;
-            int gy0 = dev_pen_y - cg->bitmap_top;
-            int gx1 = gx0 + cg->width;
-            int gy1 = gy0 + cg->rows;
-
-            if (gx0 < min_x) min_x = gx0;
-            if (gy0 < min_y) min_y = gy0;
-            if (gx1 > max_x) max_x = gx1;
-            if (gy1 > max_y) max_y = gy1;
-
-            cur_x += cg->advance_x;
-        }
+        int is_pure_opaque = 0;
+        int bg_left = dev_pen_x;
+        int bg_right = dev_pen_x + total_width;
+        int bg_top = dev_y;
+        int bg_bottom = dev_y + font_height;
 
         if (bk_mode == 2) {
-            int bg_left = dev_pen_x;
-            int bg_right = dev_pen_x + total_width;
-            int bg_top = dev_y;
-            int bg_bottom = dev_y + font_height;
-
-            if (bg_left < min_x) min_x = bg_left;
-            if (bg_top < min_y) min_y = bg_top;
-            if (bg_right > max_x) max_x = bg_right;
-            if (bg_bottom > max_y) max_y = bg_bottom;
+            if (!has_pixels || (min_x >= bg_left && max_x <= bg_right && min_y >= bg_top && max_y <= bg_bottom)) {
+                is_pure_opaque = 1;
+                min_x = bg_left;
+                max_x = bg_right;
+                min_y = bg_top;
+                max_y = bg_bottom;
+            } else {
+                if (bg_left < min_x) min_x = bg_left;
+                if (bg_top < min_y) min_y = bg_top;
+                if (bg_right > max_x) max_x = bg_right;
+                if (bg_bottom > max_y) max_y = bg_bottom;
+                min_x -= 1;
+                min_y -= 1;
+                max_x += 1;
+                max_y += 1;
+            }
+        } else {
+            min_x -= 1;
+            min_y -= 1;
+            max_x += 1;
+            max_y += 1;
         }
 
-        if (min_x > max_x || min_y > max_y) {
+        if (min_x >= max_x || min_y >= max_y) {
             if (glyphs != glyphs_buf) free(glyphs);
             return 0; // Nothing visible to draw
         }
-
-        min_x -= 1;
-        min_y -= 1;
-        max_x += 1;
-        max_y += 1;
 
         Window root;
         int rx = 0, ry = 0;
@@ -1096,7 +1141,21 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                     GC local_gc = cached_hdc_gc;
 
                     if (local_gc && !x_error_trap) {
-                        XImage *img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+                        XImage *img = NULL;
+                        uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+
+                        if (is_pure_opaque) {
+                            uint32_t *data = (uint32_t *)malloc(bbox_w * bbox_h * sizeof(uint32_t));
+                            if (data) {
+                                for (int i = 0; i < bbox_w * bbox_h; i++) data[i] = bk_pixel;
+                                Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
+                                img = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)data, bbox_w, bbox_h, 32, bbox_w * 4);
+                            }
+                        }
+                        if (!img) {
+                            img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+                        }
+
                         if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
                             int is_fast_32 = (img->bits_per_pixel == 32 &&
                                               img->red_mask == 0x00FF0000 &&
@@ -1114,8 +1173,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                             if (by1 > bbox_h) by1 = bbox_h;
 
                             if (is_fast_32) {
-                                if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
-                                    uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                if (!is_pure_opaque && bk_mode == 2 && bx1 > bx0 && by1 > by0) {
                                     for (int py = by0; py < by1; py++) {
                                         uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
                                         for (int px = bx0; px < bx1; px++) {
@@ -1127,7 +1185,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                 uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
                                 uint32_t rb_fg = fg_pixel & 0x00FF00FF;
                                 uint32_t g_fg  = (fg_pixel >> 8) & 0x000000FF;
-                                cur_x = dev_pen_x;
+                                int cur_x = dev_pen_x;
 
                                 for (int i = 0; i < length; i++) {
                                     CachedGlyph *cg = glyphs[i];
@@ -1181,7 +1239,7 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
                                 }
 
                                 unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
-                                cur_x = dev_pen_x;
+                                int cur_x = dev_pen_x;
 
                                 for (int i = 0; i < length; i++) {
                                     CachedGlyph *cg = glyphs[i];
@@ -1312,17 +1370,17 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     return 0;
 }
 
-int DrawText(void *hdc, const char *lpString, int nCount, void *lpRect, unsigned int uFormat) {
+__attribute__((visibility("default"))) int DrawText(void *hdc, const char *lpString, int nCount, void *lpRect, unsigned int uFormat) {
     if (!real_drawtext) real_drawtext = (real_drawtext_t)dlsym(RTLD_NEXT, "DrawText");
     return real_drawtext ? real_drawtext(hdc, lpString, nCount, lpRect, uFormat) : 0;
 }
 
-int DrawTextA(void *hdc, const char *lpString, int nCount, void *lpRect, unsigned int uFormat) {
+__attribute__((visibility("default"))) int DrawTextA(void *hdc, const char *lpString, int nCount, void *lpRect, unsigned int uFormat) {
     if (!real_drawtexta) real_drawtexta = (real_drawtext_t)dlsym(RTLD_NEXT, "DrawTextA");
     return real_drawtexta ? real_drawtexta(hdc, lpString, nCount, lpRect, uFormat) : 0;
 }
 
-int ExtTextOut(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
+__attribute__((visibility("default"))) int ExtTextOut(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
     if (!real_exttextout) real_exttextout = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOut");
 
     if (!is_no_aa()) {
@@ -1334,7 +1392,7 @@ int ExtTextOut(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc
     return real_exttextout ? real_exttextout(hdc, x, y, fuOptions, lprc, lpString, cbCount, lpDx) : 0;
 }
 
-int ExtTextOutA(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
+__attribute__((visibility("default"))) int ExtTextOutA(void *hdc, int x, int y, unsigned int fuOptions, const void *lprc, const char *lpString, unsigned int cbCount, const int *lpDx) {
     if (!real_exttextouta) real_exttextouta = (real_exttextout_t)dlsym(RTLD_NEXT, "ExtTextOutA");
 
     if (!is_no_aa()) {
@@ -1346,7 +1404,7 @@ int ExtTextOutA(void *hdc, int x, int y, unsigned int fuOptions, const void *lpr
     return real_exttextouta ? real_exttextouta(hdc, x, y, fuOptions, lprc, lpString, cbCount, lpDx) : 0;
 }
 
-int TextOut(void *hdc, int x, int y, const char *lpString, int nCount) {
+__attribute__((visibility("default"))) int TextOut(void *hdc, int x, int y, const char *lpString, int nCount) {
     if (!real_textout) real_textout = (real_textout_t)dlsym(RTLD_NEXT, "TextOut");
 
     if (!is_no_aa()) {
@@ -1359,7 +1417,7 @@ int TextOut(void *hdc, int x, int y, const char *lpString, int nCount) {
     return real_textout ? real_textout(hdc, x, y, lpString, nCount) : 0;
 }
 
-int TextOutA(void *hdc, int x, int y, const char *lpString, int nCount) {
+__attribute__((visibility("default"))) int TextOutA(void *hdc, int x, int y, const char *lpString, int nCount) {
     if (!real_textouta) real_textouta = (real_textout_t)dlsym(RTLD_NEXT, "TextOutA");
 
     if (!is_no_aa()) {
@@ -1372,7 +1430,7 @@ int TextOutA(void *hdc, int x, int y, const char *lpString, int nCount) {
     return real_textouta ? real_textouta(hdc, x, y, lpString, nCount) : 0;
 }
 
-int XDrawString(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length) {
+__attribute__((visibility("default"))) int XDrawString(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length) {
     if (!real_xdrawstring) {
         real_xdrawstring = (real_xdrawstring_t)dlsym(RTLD_NEXT, "XDrawString");
     }
@@ -1389,7 +1447,7 @@ int XDrawString(Display *dpy, Drawable d, GC gc, int x, int y, const char *strin
     return 0;
 }
 
-int XDrawImageString(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length) {
+__attribute__((visibility("default"))) int XDrawImageString(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length) {
     if (!real_xdrawimagestring) {
         real_xdrawimagestring = (real_xdrawimagestring_t)dlsym(RTLD_NEXT, "XDrawImageString");
     }
