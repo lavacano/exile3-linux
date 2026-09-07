@@ -28,7 +28,7 @@ if [ "$EXILE_8BIT" = "1" ]; then
 fi
 
 echo "Starting Xephyr ${DEPTH}-bit TrueColor server on :$NESTED_DISP..."
-Xephyr ":$NESTED_DISP" -screen "640x480x$DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp /game/fonts &
+Xephyr ":$NESTED_DISP" -screen "640x480x$DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp /game/fonts -noxv -nodri -s 0 -dpms -noreset &
 XEP_PID=$!
 
 cleanup() {

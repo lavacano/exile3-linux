@@ -29,7 +29,7 @@ static inline void reset_sounds_fucked(void) {
         *cached_sf = 0;
     }
     /* Force all 100 sound effects to play asynchronously so the game engine never freezes */
-    if (cached_as) {
+    if (cached_as && ((uint8_t *)cached_as)[0] != 1) {
         memset(cached_as, 1, 100);
     }
 }
@@ -79,6 +79,7 @@ __attribute__((visibility("default"))) int ioctl(int fd, unsigned long request, 
 }
 
 #include <stdlib.h>
+#include <emmintrin.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -285,7 +286,23 @@ static void init_freetype(void) {
     ft_initialized = 1;
 }
 
-#define NUM_SIZE_SLOTS 16
+static inline void fast_fill_pixel(uint32_t *data, uint32_t pixel, int count) {
+    if (count <= 0) return;
+    if (pixel == 0) {
+        memset(data, 0, count * sizeof(uint32_t));
+        return;
+    }
+    __m128i val128 = _mm_set1_epi32((int)pixel);
+    int i = 0;
+    for (; i <= count - 4; i += 4) {
+        _mm_storeu_si128((__m128i *)(data + i), val128);
+    }
+    for (; i < count; i++) {
+        data[i] = pixel;
+    }
+}
+
+#define NUM_SIZE_SLOTS 32
 
 typedef struct {
     int valid;
@@ -306,52 +323,65 @@ typedef struct {
 } FontSizeCache;
 
 static FontSizeCache size_caches[NUM_SIZE_SLOTS];
+static int size_caches_count = 0;
+static int8_t size_to_slot[2][48];
+static int size_map_initialized = 0;
+
+static inline void init_size_map(void) {
+    if (__builtin_expect(!size_map_initialized, 0)) {
+        memset(size_to_slot, -1, sizeof(size_to_slot));
+        size_map_initialized = 1;
+    }
+}
 
 static CachedGlyph *get_cached_glyph(int is_bold, int font_height, unsigned char c) {
     if (font_height <= 0 || font_height > 120) font_height = 12;
+    int b_idx = is_bold ? 1 : 0;
 
-    static int last_slot = 0;
     int slot_idx = -1;
-    if (size_caches[last_slot].in_use &&
-        size_caches[last_slot].is_bold == is_bold &&
-        size_caches[last_slot].font_height == font_height) {
-        slot_idx = last_slot;
-    } else {
-        for (int i = 0; i < NUM_SIZE_SLOTS; i++) {
-            if (size_caches[i].in_use &&
-                size_caches[i].is_bold == is_bold &&
-                size_caches[i].font_height == font_height) {
-                slot_idx = i;
-                last_slot = i;
-                break;
-            }
+    if (__builtin_expect(font_height < 48, 1)) {
+        if (__builtin_expect(!size_map_initialized, 0)) {
+            init_size_map();
         }
+        slot_idx = size_to_slot[b_idx][font_height];
     }
 
     if (slot_idx < 0) {
-        for (int i = 0; i < NUM_SIZE_SLOTS; i++) {
-            if (!size_caches[i].in_use) {
+        for (int i = 0; i < size_caches_count; i++) {
+            if (size_caches[i].in_use &&
+                size_caches[i].is_bold == is_bold &&
+                size_caches[i].font_height == font_height) {
                 slot_idx = i;
                 break;
             }
         }
         if (slot_idx < 0) {
-            slot_idx = 0;
-            for (int ch = 0; ch < 256; ch++) {
-                if (size_caches[0].glyphs[ch].buffer) {
-                    free(size_caches[0].glyphs[ch].buffer);
-                    size_caches[0].glyphs[ch].buffer = NULL;
+            if (size_caches_count < NUM_SIZE_SLOTS) {
+                slot_idx = size_caches_count++;
+            } else {
+                slot_idx = 0;
+                for (int ch = 0; ch < 256; ch++) {
+                    if (size_caches[0].glyphs[ch].buffer) {
+                        free(size_caches[0].glyphs[ch].buffer);
+                        size_caches[0].glyphs[ch].buffer = NULL;
+                    }
+                }
+                if (size_caches[0].font_height < 48) {
+                    size_to_slot[size_caches[0].is_bold ? 1 : 0][size_caches[0].font_height] = -1;
                 }
             }
+            memset(&size_caches[slot_idx], 0, sizeof(FontSizeCache));
+            size_caches[slot_idx].in_use = 1;
+            size_caches[slot_idx].is_bold = is_bold;
+            size_caches[slot_idx].font_height = font_height;
         }
-        memset(&size_caches[slot_idx], 0, sizeof(FontSizeCache));
-        size_caches[slot_idx].in_use = 1;
-        size_caches[slot_idx].is_bold = is_bold;
-        size_caches[slot_idx].font_height = font_height;
+        if (font_height < 48) {
+            size_to_slot[b_idx][font_height] = (int8_t)slot_idx;
+        }
     }
 
     CachedGlyph *cg = &size_caches[slot_idx].glyphs[c];
-    if (!cg->valid) {
+    if (__builtin_expect(!cg->valid, 0)) {
         FT_Face face = is_bold ? ft_face_bold : ft_face_regular;
         if (!face) face = ft_face_regular;
         if (!face) return NULL;
@@ -412,8 +442,9 @@ static void prewarm_font_cache(void) {
     static int prewarmed = 0;
     if (prewarmed || ft_failed || !ft_face_regular) return;
     prewarmed = 1;
-    static const int sizes[] = { 11, 12, 13, 14, 16 };
-    for (int s = 0; s < 5; s++) {
+    init_size_map();
+    static const int sizes[] = { 9, 10, 11, 12, 13, 14, 16, 18, 20, 24 };
+    for (int s = 0; s < 10; s++) {
         for (int bold = 0; bold < 2; bold++) {
             for (unsigned char c = 32; c <= 126; c++) {
                 get_cached_glyph(bold, sizes[s], c);
@@ -504,6 +535,95 @@ __attribute__((visibility("default"))) XErrorHandler XSetErrorHandler(XErrorHand
     return real_xseterrorhandler(quiet_x_error_handler);
 }
 
+typedef struct {
+    Drawable d;
+    unsigned int width;
+    unsigned int height;
+    unsigned int depth;
+} WinGeoCache;
+
+#define WIN_GEO_CACHE_SIZE 8
+static WinGeoCache win_geo_cache[WIN_GEO_CACHE_SIZE];
+static int win_geo_count = 0;
+
+static inline int get_cached_geometry(Display *dpy, Drawable d, unsigned int *w, unsigned int *h, unsigned int *depth) {
+    for (int i = 0; i < win_geo_count; i++) {
+        if (win_geo_cache[i].d == d) {
+            *w = win_geo_cache[i].width;
+            *h = win_geo_cache[i].height;
+            *depth = win_geo_cache[i].depth;
+            return 1;
+        }
+    }
+    Window root;
+    int rx = 0, ry = 0;
+    unsigned int win_w = 0, win_h = 0, border_w = 0, d_depth = 0;
+    x_error_trap = 0;
+    XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
+    Status s = XGetGeometry(dpy, d, &root, &rx, &ry, &win_w, &win_h, &border_w, &d_depth);
+    XSetErrorHandler(prev_handler);
+    if (!s || x_error_trap) {
+        return 0;
+    }
+    if (win_geo_count < WIN_GEO_CACHE_SIZE) {
+        win_geo_cache[win_geo_count].d = d;
+        win_geo_cache[win_geo_count].width = win_w;
+        win_geo_cache[win_geo_count].height = win_h;
+        win_geo_cache[win_geo_count].depth = d_depth;
+        win_geo_count++;
+    } else {
+        win_geo_cache[0].d = d;
+        win_geo_cache[0].width = win_w;
+        win_geo_cache[0].height = win_h;
+        win_geo_cache[0].depth = d_depth;
+    }
+    *w = win_w;
+    *h = win_h;
+    *depth = d_depth;
+    return 1;
+}
+
+#define SCRATCH_BUF_MAX_W 640
+#define SCRATCH_BUF_MAX_H 64
+#define SCRATCH_BUF_PIXELS (SCRATCH_BUF_MAX_W * SCRATCH_BUF_MAX_H)
+
+static uint32_t scratch_text_buf[SCRATCH_BUF_PIXELS];
+static XImage *scratch_ximage = NULL;
+static Display *scratch_ximage_dpy = NULL;
+
+static XImage *get_scratch_ximage(Display *dpy, int w, int h) {
+    if (w <= 0 || h <= 0 || w > SCRATCH_BUF_MAX_W || (w * h) > SCRATCH_BUF_PIXELS) {
+        return NULL;
+    }
+    if (!scratch_ximage || scratch_ximage_dpy != dpy) {
+        if (scratch_ximage) {
+            scratch_ximage->data = NULL;
+            XDestroyImage(scratch_ximage);
+            scratch_ximage = NULL;
+        }
+        Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
+        scratch_ximage = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)scratch_text_buf, SCRATCH_BUF_MAX_W, SCRATCH_BUF_MAX_H, 32, SCRATCH_BUF_MAX_W * 4);
+        scratch_ximage_dpy = dpy;
+    }
+    if (scratch_ximage) {
+        scratch_ximage->width = w;
+        scratch_ximage->height = h;
+        scratch_ximage->bytes_per_line = w * 4;
+        scratch_ximage->data = (char *)scratch_text_buf;
+    }
+    return scratch_ximage;
+}
+
+static inline void reset_scratch_and_geo(void) {
+    if (scratch_ximage) {
+        scratch_ximage->data = NULL;
+        XDestroyImage(scratch_ximage);
+        scratch_ximage = NULL;
+        scratch_ximage_dpy = NULL;
+    }
+    win_geo_count = 0;
+}
+
 static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const char *string, int length, int is_image_string) {
     if (!ft_initialized) {
         init_freetype();
@@ -578,15 +698,8 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
         max_y += 1;
     }
 
-    Window root;
-    int rx = 0, ry = 0;
-    unsigned int win_w = 0, win_h = 0, border_w = 0, depth = 0;
-    x_error_trap = 0;
-    XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
-    Status s = XGetGeometry(dpy, d, &root, &rx, &ry, &win_w, &win_h, &border_w, &depth);
-    if (!s || x_error_trap || depth < 24) {
-        XSync(dpy, False);
-        XSetErrorHandler(prev_handler);
+    unsigned int win_w = 0, win_h = 0, depth = 0;
+    if (!get_cached_geometry(dpy, d, &win_w, &win_h, &depth) || depth < 24) {
         if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
@@ -599,37 +712,39 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     int bbox_w = max_x - min_x;
     int bbox_h = max_y - min_y;
     if (bbox_w <= 0 || bbox_h <= 0) {
-        XSync(dpy, False);
-        XSetErrorHandler(prev_handler);
         if (glyphs != glyphs_buf) free(glyphs);
         return 0;
     }
 
     XImage *img = NULL;
+    int is_scratch = 0;
     if (is_pure_opaque) {
-        uint32_t *data = (uint32_t *)malloc(bbox_w * bbox_h * sizeof(uint32_t));
-        if (data) {
-            uint32_t bg_val = (uint32_t)values.background;
-            for (int i = 0; i < bbox_w * bbox_h; i++) data[i] = bg_val;
-            Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
-            img = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)data, bbox_w, bbox_h, 32, bbox_w * 4);
+        img = get_scratch_ximage(dpy, bbox_w, bbox_h);
+        if (img) {
+            is_scratch = 1;
+            fast_fill_pixel((uint32_t *)img->data, (uint32_t)values.background, bbox_w * bbox_h);
+        } else {
+            uint32_t *data = (uint32_t *)malloc(bbox_w * bbox_h * sizeof(uint32_t));
+            if (data) {
+                fast_fill_pixel(data, (uint32_t)values.background, bbox_w * bbox_h);
+                Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
+                img = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)data, bbox_w, bbox_h, 32, bbox_w * 4);
+            }
         }
     }
     if (!img) {
+        x_error_trap = 0;
+        XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
         img = XGetImage(dpy, d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
-    }
-    if (x_error_trap || !img) {
-        if (img) XDestroyImage(img);
-        XSync(dpy, False);
         XSetErrorHandler(prev_handler);
+    }
+    if (!img) {
         if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
 
     if (img->bits_per_pixel != 24 && img->bits_per_pixel != 32) {
-        XDestroyImage(img);
-        XSync(dpy, False);
-        XSetErrorHandler(prev_handler);
+        if (!is_scratch) XDestroyImage(img);
         if (glyphs != glyphs_buf) free(glyphs);
         return -1;
     }
@@ -653,9 +768,7 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
             uint32_t bg_val = (uint32_t)values.background;
             for (int py = 0; py < bbox_h; py++) {
                 uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                for (int px = 0; px < bbox_w; px++) {
-                    dst_row[px] = bg_val;
-                }
+                fast_fill_pixel(dst_row, bg_val, bbox_w);
             }
         }
 
@@ -674,26 +787,26 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
                 int c_end = (gx0 + cg->width > bbox_w) ? (bbox_w - gx0) : cg->width;
 
                 if (r_start < r_end && c_start < c_end) {
+                    int col_count = c_end - c_start;
                     for (int row = r_start; row < r_end; row++) {
                         int py = gy0 + row;
-                        uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                        const unsigned char *src = cg->buffer + row * cg->pitch;
+                        uint32_t *dst = (uint32_t *)(img->data + py * img->bytes_per_line) + gx0 + c_start;
+                        const unsigned char *src_ptr = cg->buffer + row * cg->pitch + c_start;
 
-                        for (int col = c_start; col < c_end; col++) {
-                            unsigned int alpha = src[col];
+                        for (int col = 0; col < col_count; col++) {
+                            unsigned int alpha = src_ptr[col];
                             if (alpha < 24) continue;
 
-                            int px = gx0 + col;
                             if (alpha >= 224) {
-                                dst_row[px] = fg_val;
+                                dst[col] = fg_val;
                             } else {
-                                uint32_t bg = dst_row[px];
+                                uint32_t bg = dst[col];
                                 uint32_t rb_bg = bg & 0x00FF00FF;
                                 uint32_t g_bg  = (bg >> 8) & 0x000000FF;
                                 unsigned int inv_a = 255 - alpha;
                                 uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
                                 uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
-                                dst_row[px] = rb | (g << 8);
+                                dst[col] = rb | (g << 8);
                             }
                         }
                     }
@@ -754,9 +867,10 @@ static int draw_text_aa(Display *dpy, Drawable d, GC gc, int x, int y, const cha
     }
 
     XPutImage(dpy, d, gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
-    XDestroyImage(img);
+    if (!is_scratch) {
+        XDestroyImage(img);
+    }
     XFlush(dpy);
-    XSetErrorHandler(prev_handler);
     if (glyphs != glyphs_buf) free(glyphs);
     return 0;
 }
@@ -950,8 +1064,8 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
         if (tm.tmWeight >= 700) is_bold = 1;
     }
 
-    char facename[64] = {0};
-    if (real_gettextface) {
+    if (!is_bold && real_gettextface) {
+        char facename[64] = {0};
         real_gettextface(hdc, sizeof(facename) - 1, facename);
         if (strstr(facename, "Bold") || strstr(facename, "bold")) {
             is_bold = 1;
@@ -1052,7 +1166,11 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
     }
 
     // Attempt direct X11 block blit (instantaneous in-memory compositing)
-    Display *dpy = p_getdisplaydata ? (Display *)p_getdisplaydata() : NULL;
+    static Display *cached_twin_dpy = NULL;
+    if (__builtin_expect(!cached_twin_dpy, 0)) {
+        if (p_getdisplaydata) cached_twin_dpy = (Display *)p_getdisplaydata();
+    }
+    Display *dpy = cached_twin_dpy;
     void *hwnd = real_windowfromdc ? real_windowfromdc(hdc) : NULL;
     Drawable win_d = (p_getwindowdata && hwnd) ? (Drawable)p_getwindowdata(hwnd) : 0;
 
@@ -1101,207 +1219,200 @@ static int draw_text_hdc_aa(void *hdc, int x, int y, const char *string, int len
             return 0; // Nothing visible to draw
         }
 
-        Window root;
-        int rx = 0, ry = 0;
-        unsigned int win_w = 0, win_h = 0, border_w = 0, depth = 0;
+        unsigned int win_w = 0, win_h = 0, depth = 0;
+        if (get_cached_geometry(dpy, win_d, &win_w, &win_h, &depth) && depth >= 24) {
+            if (min_x < 0) min_x = 0;
+            if (min_y < 0) min_y = 0;
+            if (max_x > (int)win_w) max_x = (int)win_w;
+            if (max_y > (int)win_h) max_y = (int)win_h;
+            int bbox_w = max_x - min_x;
+            int bbox_h = max_y - min_y;
 
-        x_error_trap = 0;
-        XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
-        Status s = XGetGeometry(dpy, win_d, &root, &rx, &ry, &win_w, &win_h, &border_w, &depth);
+            if (bbox_w > 0 && bbox_h > 0) {
+                static GC cached_hdc_gc = 0;
+                static Display *cached_hdc_dpy = NULL;
+                static Drawable cached_hdc_win = 0;
 
-        if (s && !x_error_trap && depth >= 24) {
-            XWindowAttributes attr;
-            int is_input_only = 0;
-            if (XGetWindowAttributes(dpy, win_d, &attr)) {
-                if (attr.class == InputOnly) is_input_only = 1;
-            }
-
-            if (!is_input_only && !x_error_trap) {
-                if (min_x < 0) min_x = 0;
-                if (min_y < 0) min_y = 0;
-                if (max_x > (int)win_w) max_x = (int)win_w;
-                if (max_y > (int)win_h) max_y = (int)win_h;
-                int bbox_w = max_x - min_x;
-                int bbox_h = max_y - min_y;
-
-                if (bbox_w > 0 && bbox_h > 0) {
-                    static GC cached_hdc_gc = 0;
-                    static Display *cached_hdc_dpy = NULL;
-                    static Drawable cached_hdc_win = 0;
-
-                    if (!cached_hdc_gc || cached_hdc_dpy != dpy || cached_hdc_win != win_d) {
-                        if (cached_hdc_gc && cached_hdc_dpy) {
-                            XFreeGC(cached_hdc_dpy, cached_hdc_gc);
-                            cached_hdc_gc = 0;
-                        }
-                        cached_hdc_gc = XCreateGC(dpy, win_d, 0, NULL);
-                        cached_hdc_dpy = dpy;
-                        cached_hdc_win = win_d;
+                if (!cached_hdc_gc || cached_hdc_dpy != dpy || cached_hdc_win != win_d) {
+                    if (cached_hdc_gc && cached_hdc_dpy) {
+                        XFreeGC(cached_hdc_dpy, cached_hdc_gc);
+                        cached_hdc_gc = 0;
                     }
-                    GC local_gc = cached_hdc_gc;
+                    cached_hdc_gc = XCreateGC(dpy, win_d, 0, NULL);
+                    cached_hdc_dpy = dpy;
+                    cached_hdc_win = win_d;
+                }
+                GC local_gc = cached_hdc_gc;
 
-                    if (local_gc && !x_error_trap) {
-                        XImage *img = NULL;
-                        uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
+                if (local_gc) {
+                    XImage *img = NULL;
+                    int is_scratch = 0;
+                    uint32_t bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
 
-                        if (is_pure_opaque) {
+                    if (is_pure_opaque) {
+                        img = get_scratch_ximage(dpy, bbox_w, bbox_h);
+                        if (img) {
+                            is_scratch = 1;
+                            fast_fill_pixel((uint32_t *)img->data, bk_pixel, bbox_w * bbox_h);
+                        } else {
                             uint32_t *data = (uint32_t *)malloc(bbox_w * bbox_h * sizeof(uint32_t));
                             if (data) {
-                                for (int i = 0; i < bbox_w * bbox_h; i++) data[i] = bk_pixel;
+                                fast_fill_pixel(data, bk_pixel, bbox_w * bbox_h);
                                 Visual *vis = DefaultVisual(dpy, DefaultScreen(dpy));
                                 img = XCreateImage(dpy, vis, 24, ZPixmap, 0, (char *)data, bbox_w, bbox_h, 32, bbox_w * 4);
                             }
                         }
-                        if (!img) {
-                            img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
-                        }
+                    }
+                    if (!img) {
+                        x_error_trap = 0;
+                        XErrorHandler prev_handler = XSetErrorHandler(trap_x_errors);
+                        img = XGetImage(dpy, win_d, min_x, min_y, bbox_w, bbox_h, AllPlanes, ZPixmap);
+                        XSetErrorHandler(prev_handler);
+                    }
 
-                        if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
-                            int is_fast_32 = (img->bits_per_pixel == 32 &&
-                                              img->red_mask == 0x00FF0000 &&
-                                              img->green_mask == 0x0000FF00 &&
-                                              img->blue_mask == 0x000000FF);
+                    if (img && !x_error_trap && (img->bits_per_pixel == 24 || img->bits_per_pixel == 32)) {
+                        int is_fast_32 = (img->bits_per_pixel == 32 &&
+                                          img->red_mask == 0x00FF0000 &&
+                                          img->green_mask == 0x0000FF00 &&
+                                          img->blue_mask == 0x000000FF);
 
-                            int bx0 = dev_pen_x - min_x;
-                            int by0 = dev_y - min_y;
-                            int bx1 = bx0 + total_width;
-                            int by1 = by0 + font_height;
+                        int bx0 = dev_pen_x - min_x;
+                        int by0 = dev_y - min_y;
+                        int bx1 = bx0 + total_width;
+                        int by1 = by0 + font_height;
 
-                            if (bx0 < 0) bx0 = 0;
-                            if (by0 < 0) by0 = 0;
-                            if (bx1 > bbox_w) bx1 = bbox_w;
-                            if (by1 > bbox_h) by1 = bbox_h;
+                        if (bx0 < 0) bx0 = 0;
+                        if (by0 < 0) by0 = 0;
+                        if (bx1 > bbox_w) bx1 = bbox_w;
+                        if (by1 > bbox_h) by1 = bbox_h;
 
-                            if (is_fast_32) {
-                                if (!is_pure_opaque && bk_mode == 2 && bx1 > bx0 && by1 > by0) {
-                                    for (int py = by0; py < by1; py++) {
-                                        uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                                        for (int px = bx0; px < bx1; px++) {
-                                            dst_row[px] = bk_pixel;
-                                        }
-                                    }
-                                }
-
-                                uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
-                                uint32_t rb_fg = fg_pixel & 0x00FF00FF;
-                                uint32_t g_fg  = (fg_pixel >> 8) & 0x000000FF;
-                                int cur_x = dev_pen_x;
-
-                                for (int i = 0; i < length; i++) {
-                                    CachedGlyph *cg = glyphs[i];
-                                    if (!cg) continue;
-
-                                    if (cg->buffer && cg->rows > 0 && cg->width > 0) {
-                                        int gx0 = cur_x + cg->bitmap_left - min_x;
-                                        int gy0 = dev_pen_y - cg->bitmap_top - min_y;
-
-                                        int r_start = (gy0 < 0) ? -gy0 : 0;
-                                        int r_end = (gy0 + cg->rows > bbox_h) ? (bbox_h - gy0) : cg->rows;
-                                        int c_start = (gx0 < 0) ? -gx0 : 0;
-                                        int c_end = (gx0 + cg->width > bbox_w) ? (bbox_w - gx0) : cg->width;
-
-                                        if (r_start < r_end && c_start < c_end) {
-                                            for (int row = r_start; row < r_end; row++) {
-                                                int py = gy0 + row;
-                                                uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
-                                                const unsigned char *src = cg->buffer + row * cg->pitch;
-
-                                                for (int col = c_start; col < c_end; col++) {
-                                                    unsigned int alpha = src[col];
-                                                    if (alpha < 24) continue;
-
-                                                    int px = gx0 + col;
-                                                    if (alpha >= 224) {
-                                                        dst_row[px] = fg_pixel;
-                                                    } else {
-                                                        uint32_t bg = dst_row[px];
-                                                        uint32_t rb_bg = bg & 0x00FF00FF;
-                                                        uint32_t g_bg  = (bg >> 8) & 0x000000FF;
-                                                        unsigned int inv_a = 255 - alpha;
-                                                        uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
-                                                        uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
-                                                        dst_row[px] = rb | (g << 8);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    cur_x += cg->advance_x;
-                                }
-                            } else {
-                                if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
-                                    unsigned long bk_pixel = (bk_r << 16) | (bk_g << 8) | bk_b;
-                                    for (int py = by0; py < by1; py++) {
-                                        for (int px = bx0; px < bx1; px++) {
-                                            XPutPixel(img, px, py, bk_pixel);
-                                        }
-                                    }
-                                }
-
-                                unsigned long fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
-                                int cur_x = dev_pen_x;
-
-                                for (int i = 0; i < length; i++) {
-                                    CachedGlyph *cg = glyphs[i];
-                                    if (!cg) continue;
-
-                                    if (cg->buffer && cg->rows > 0 && cg->width > 0) {
-                                        int gx0 = cur_x + cg->bitmap_left - min_x;
-                                        int gy0 = dev_pen_y - cg->bitmap_top - min_y;
-
-                                        for (int row = 0; row < cg->rows; row++) {
-                                            int py = gy0 + row;
-                                            if (py < 0 || py >= bbox_h) continue;
-                                            unsigned char *src = cg->buffer + row * cg->pitch;
-
-                                            for (int col = 0; col < cg->width; col++) {
-                                                unsigned int alpha = src[col];
-                                                if (alpha < 24) continue;
-
-                                                int px = gx0 + col;
-                                                if (px < 0 || px >= bbox_w) continue;
-
-                                                if (alpha >= 224) {
-                                                    XPutPixel(img, px, py, fg_pixel);
-                                                } else {
-                                                    unsigned long bg = XGetPixel(img, px, py);
-                                                    unsigned int cur_bg_r = (bg >> 16) & 0xFF;
-                                                    unsigned int cur_bg_g = (bg >> 8) & 0xFF;
-                                                    unsigned int cur_bg_b = bg & 0xFF;
-
-                                                    unsigned int inv_a = 255 - alpha;
-                                                    unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
-                                                    unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
-                                                    unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
-
-                                                    XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    cur_x += cg->advance_x;
+                        if (is_fast_32) {
+                            if (!is_pure_opaque && bk_mode == 2 && bx1 > bx0 && by1 > by0) {
+                                for (int py = by0; py < by1; py++) {
+                                    uint32_t *dst_row = (uint32_t *)(img->data + py * img->bytes_per_line);
+                                    fast_fill_pixel(dst_row + bx0, bk_pixel, bx1 - bx0);
                                 }
                             }
 
-                            XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
-                            XDestroyImage(img);
-                            XFlush(dpy);
-                            XSetErrorHandler(prev_handler);
-                            if (glyphs != glyphs_buf) free(glyphs);
-                            return 0; // Ultra-fast single block blit succeeded!
+                            uint32_t fg_pixel = (fg_r << 16) | (fg_g << 8) | fg_b;
+                            uint32_t rb_fg = fg_pixel & 0x00FF00FF;
+                            uint32_t g_fg  = (fg_pixel >> 8) & 0x000000FF;
+                            int cur_x = dev_pen_x;
+
+                            for (int i = 0; i < length; i++) {
+                                CachedGlyph *cg = glyphs[i];
+                                if (!cg) continue;
+
+                                if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                                    int gx0 = cur_x + cg->bitmap_left - min_x;
+                                    int gy0 = dev_pen_y - cg->bitmap_top - min_y;
+
+                                    int r_start = (gy0 < 0) ? -gy0 : 0;
+                                    int r_end = (gy0 + cg->rows > bbox_h) ? (bbox_h - gy0) : cg->rows;
+                                    int c_start = (gx0 < 0) ? -gx0 : 0;
+                                    int c_end = (gx0 + cg->width > bbox_w) ? (bbox_w - gx0) : cg->width;
+
+                                    if (r_start < r_end && c_start < c_end) {
+                                        int col_count = c_end - c_start;
+                                        for (int row = r_start; row < r_end; row++) {
+                                            int py = gy0 + row;
+                                            uint32_t *dst = (uint32_t *)(img->data + py * img->bytes_per_line) + gx0 + c_start;
+                                            const unsigned char *src_ptr = cg->buffer + row * cg->pitch + c_start;
+
+                                            for (int col = 0; col < col_count; col++) {
+                                                unsigned int alpha = src_ptr[col];
+                                                if (alpha < 24) continue;
+
+                                                if (alpha >= 224) {
+                                                    dst[col] = fg_pixel;
+                                                } else {
+                                                    uint32_t bg = dst[col];
+                                                    uint32_t rb_bg = bg & 0x00FF00FF;
+                                                    uint32_t g_bg  = (bg >> 8) & 0x000000FF;
+                                                    unsigned int inv_a = 255 - alpha;
+                                                    uint32_t rb = ((rb_fg * alpha + rb_bg * inv_a + 0x00800080) >> 8) & 0x00FF00FF;
+                                                    uint32_t g  = ((g_fg * alpha + g_bg * inv_a + 0x00000080) >> 8) & 0x000000FF;
+                                                    dst[col] = rb | (g << 8);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                cur_x += cg->advance_x;
+                            }
+                        } else {
+                            if (bk_mode == 2 && bx1 > bx0 && by1 > by0) {
+                                unsigned long bk_pixel_ul = (bk_r << 16) | (bk_g << 8) | bk_b;
+                                for (int py = by0; py < by1; py++) {
+                                    for (int px = bx0; px < bx1; px++) {
+                                        XPutPixel(img, px, py, bk_pixel_ul);
+                                    }
+                                }
+                            }
+
+                            unsigned long fg_pixel_ul = (fg_r << 16) | (fg_g << 8) | fg_b;
+                            int cur_x = dev_pen_x;
+
+                            for (int i = 0; i < length; i++) {
+                                CachedGlyph *cg = glyphs[i];
+                                if (!cg) continue;
+
+                                if (cg->buffer && cg->rows > 0 && cg->width > 0) {
+                                    int gx0 = cur_x + cg->bitmap_left - min_x;
+                                    int gy0 = dev_pen_y - cg->bitmap_top - min_y;
+
+                                    for (int row = 0; row < cg->rows; row++) {
+                                        int py = gy0 + row;
+                                        if (py < 0 || py >= bbox_h) continue;
+                                        unsigned char *src = cg->buffer + row * cg->pitch;
+
+                                        for (int col = 0; col < cg->width; col++) {
+                                            unsigned int alpha = src[col];
+                                            if (alpha < 24) continue;
+
+                                            int px = gx0 + col;
+                                            if (px < 0 || px >= bbox_w) continue;
+
+                                            if (alpha >= 224) {
+                                                XPutPixel(img, px, py, fg_pixel_ul);
+                                            } else {
+                                                unsigned long bg = XGetPixel(img, px, py);
+                                                unsigned int cur_bg_r = (bg >> 16) & 0xFF;
+                                                unsigned int cur_bg_g = (bg >> 8) & 0xFF;
+                                                unsigned int cur_bg_b = bg & 0xFF;
+
+                                                unsigned int inv_a = 255 - alpha;
+                                                unsigned int out_r = (fg_r * alpha + cur_bg_r * inv_a + 128) >> 8;
+                                                unsigned int out_g = (fg_g * alpha + cur_bg_g * inv_a + 128) >> 8;
+                                                unsigned int out_b = (fg_b * alpha + cur_bg_b * inv_a + 128) >> 8;
+
+                                                XPutPixel(img, px, py, (out_r << 16) | (out_g << 8) | out_b);
+                                            }
+                                        }
+                                    }
+                                }
+                                cur_x += cg->advance_x;
+                            }
                         }
-                        if (img) XDestroyImage(img);
+
+                        XPutImage(dpy, win_d, local_gc, img, 0, 0, min_x, min_y, bbox_w, bbox_h);
+                        if (!is_scratch) {
+                            XDestroyImage(img);
+                        }
+                        XFlush(dpy);
+                        if (glyphs != glyphs_buf) free(glyphs);
+                        return 0; // Ultra-fast single block blit succeeded!
                     }
-                    if (x_error_trap) {
-                        cached_hdc_gc = 0;
-                        cached_hdc_dpy = NULL;
-                        cached_hdc_win = 0;
-                    }
+                    if (img && !is_scratch) XDestroyImage(img);
+                }
+                if (x_error_trap) {
+                    reset_scratch_and_geo();
+                    cached_hdc_gc = 0;
+                    cached_hdc_dpy = NULL;
+                    cached_hdc_win = 0;
                 }
             }
         }
-        XSync(dpy, False);
-        XSetErrorHandler(prev_handler);
     }
 
     if (bk_mode == 2) {

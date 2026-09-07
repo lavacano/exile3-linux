@@ -187,7 +187,7 @@ if [ "$USE_GAMESCOPE" = true ]; then
         '
     else
         exec gamescope "${GS_ARGS[@]}" -- bash -c '
-            distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" +bs -nolisten tcp -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" &
+            distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" +bs -nolisten tcp -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" -noxv -nodri -s 0 -dpms -noreset &
             XEP_PID=$!
             cleanup() {
                 kill -9 $XEP_PID 2>/dev/null || true
@@ -248,7 +248,7 @@ else
         rm -f /tmp/.X11-unix/X1 2>/dev/null || true
         sleep 0.05
 
-        distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp "$DIR/fonts" &
+        distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp "$DIR/fonts" -noxv -nodri -s 0 -dpms -noreset &
         XEPHYR_PID=$!
 
         cleanup() {
