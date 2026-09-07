@@ -187,23 +187,43 @@ if [ "$USE_GAMESCOPE" = true ]; then
                 "'"$DOCKER_IMAGE"'" "'"$TARGET"'"
         '
     else
+        export EXILE_COLOR_DEPTH="$COLOR_DEPTH"
+        export EXILE_TITLE="$TITLE"
+        export EXILE_DIR="$DIR"
+        export EXILE_BIN="$BIN"
+        export EXILE_AA_MODE="$AA_MODE"
+        export EXILE_NO_AA_VAL="$NO_AA_VAL"
+        export PULSE_LATENCY_MSEC=30
+        export PADSP_NO_MIXER=1
+        export PADSP_NO_SNDSTAT=1
+
         exec gamescope "${GS_ARGS[@]}" -- bash -c '
-            distrobox enter exile3 -- Xephyr :2 -screen "640x480x'"$COLOR_DEPTH"'" +bs -nolisten tcp -title "'"$TITLE"'" -ac -fp "'"$DIR"'/fonts" -noxv -nodri -s 0 -dpms -noreset &
-            XEP_PID=$!
-            cleanup() {
-                kill -9 $XEP_PID 2>/dev/null || true
-                pkill -9 -f "Xephyr :2" 2>/dev/null || true
-                rm -f /tmp/.X11-unix/X2 2>/dev/null || true
-            }
-            trap cleanup EXIT INT TERM
-            for i in $(seq 1 100); do
-                if [ -S /tmp/.X11-unix/X2 ]; then
-                    break
-                fi
-                sleep 0.01
-            done
-            distrobox enter exile3 -- sh -c "cd '"$DIR"' && export DISPLAY=:2 && export EXILE_PATH='"$DIR"' && export LD_LIBRARY_PATH='"$DIR"' && export LD_PRELOAD='"$DIR"'/libexile3audio.so && export TWINRC='"$DIR"'/twinrc && export EXILE_AA='"$AA_MODE"' && export EXILE_NO_AA='"$NO_AA_VAL"' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '"$BIN"'"
-            cleanup
+            distrobox enter exile3 -- bash -c '\''
+                Xephyr :2 -screen "640x480x${EXILE_COLOR_DEPTH}" +bs -nolisten tcp -title "${EXILE_TITLE}" -ac -fp "${EXILE_DIR}/fonts" -noxv -nodri -s 0 -dpms -noreset &
+                XEP_PID=$!
+                cleanup() {
+                    kill -9 $XEP_PID 2>/dev/null || true
+                    pkill -9 -f "Xephyr :2" 2>/dev/null || true
+                    rm -f /tmp/.X11-unix/X2 2>/dev/null || true
+                }
+                trap cleanup EXIT INT TERM
+                for i in $(seq 1 100); do
+                    if [ -S /tmp/.X11-unix/X2 ]; then
+                        break
+                    fi
+                    sleep 0.01
+                done
+                cd "${EXILE_DIR}"
+                export DISPLAY=:2
+                export EXILE_PATH="${EXILE_DIR}"
+                export LD_LIBRARY_PATH="${EXILE_DIR}"
+                export LD_PRELOAD="${EXILE_DIR}/libexile3audio.so"
+                export TWINRC="${EXILE_DIR}/twinrc"
+                export EXILE_AA="${EXILE_AA_MODE}"
+                export EXILE_NO_AA="${EXILE_NO_AA_VAL}"
+                padsp "${EXILE_BIN}"
+                cleanup
+            '\''
         '
     fi
 else
@@ -248,27 +268,44 @@ else
             pkill -9 -f "Xephyr :1" 2>/dev/null || true
         fi
         rm -f /tmp/.X11-unix/X1 2>/dev/null || true
-        sleep 0.05
+        sleep 0.01
 
-        distrobox enter exile3 -- Xephyr :1 -screen "640x480x$COLOR_DEPTH" +bs -nolisten tcp -title "$TITLE" -ac -fp "$DIR/fonts" -noxv -nodri -s 0 -dpms -noreset &
-        XEPHYR_PID=$!
+        export EXILE_COLOR_DEPTH="$COLOR_DEPTH"
+        export EXILE_TITLE="$TITLE"
+        export EXILE_DIR="$DIR"
+        export EXILE_BIN="$BIN"
+        export EXILE_AA_MODE="$AA_MODE"
+        export EXILE_NO_AA_VAL="$NO_AA_VAL"
+        export PULSE_LATENCY_MSEC=30
+        export PADSP_NO_MIXER=1
+        export PADSP_NO_SNDSTAT=1
 
-        cleanup() {
-            kill -9 "$XEPHYR_PID" 2>/dev/null || true
-            pkill -9 -f "Xephyr :1" 2>/dev/null || true
-            rm -f /tmp/.X11-unix/X1 2>/dev/null || true
-        }
-        trap cleanup EXIT INT TERM
-
-        for i in $(seq 1 100); do
-            if [ -S /tmp/.X11-unix/X1 ]; then
-                break
-            fi
-            sleep 0.01
-        done
-
-        distrobox enter exile3 -- sh -c "cd '$DIR' && export DISPLAY=:1 && export EXILE_PATH='$DIR' && export LD_LIBRARY_PATH='$DIR' && export LD_PRELOAD='$DIR/libexile3audio.so' && export TWINRC='$DIR/twinrc' && export EXILE_AA='$AA_MODE' && export EXILE_NO_AA='$NO_AA_VAL' && export PULSE_LATENCY_MSEC=30 && export PADSP_NO_MIXER=1 && export PADSP_NO_SNDSTAT=1 && padsp '$BIN'"
-        cleanup
+        distrobox enter exile3 -- bash -c '
+            Xephyr :1 -screen "640x480x${EXILE_COLOR_DEPTH}" +bs -nolisten tcp -title "${EXILE_TITLE}" -ac -fp "${EXILE_DIR}/fonts" -noxv -nodri -s 0 -dpms -noreset &
+            XEPHYR_PID=$!
+            cleanup() {
+                kill -9 "$XEPHYR_PID" 2>/dev/null || true
+                pkill -9 -f "Xephyr :1" 2>/dev/null || true
+                rm -f /tmp/.X11-unix/X1 2>/dev/null || true
+            }
+            trap cleanup EXIT INT TERM
+            for i in $(seq 1 100); do
+                if [ -S /tmp/.X11-unix/X1 ]; then
+                    break
+                fi
+                sleep 0.01
+            done
+            cd "${EXILE_DIR}"
+            export DISPLAY=:1
+            export EXILE_PATH="${EXILE_DIR}"
+            export LD_LIBRARY_PATH="${EXILE_DIR}"
+            export LD_PRELOAD="${EXILE_DIR}/libexile3audio.so"
+            export TWINRC="${EXILE_DIR}/twinrc"
+            export EXILE_AA="${EXILE_AA_MODE}"
+            export EXILE_NO_AA="${EXILE_NO_AA_VAL}"
+            padsp "${EXILE_BIN}"
+            cleanup
+        '
     fi
 
 fi

@@ -39,11 +39,11 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Wait for Xephyr to be ready
-for i in $(seq 1 60); do
+for i in $(seq 1 100); do
     if [ -S "/tmp/.X11-unix/X$NESTED_DISP" ]; then
         break
     fi
-    sleep 0.05
+    sleep 0.01
 done
 
 export DISPLAY=":$NESTED_DISP"
