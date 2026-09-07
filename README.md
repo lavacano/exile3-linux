@@ -4,6 +4,14 @@ A modernized, high-performance port wrapper and Docker container for Spiderweb S
 
 ---
 
+## Screenshots
+
+| In-Game World & Party Exploration | Modernized Dialogue & Anti-Aliased Typography |
+| :---: | :---: |
+| ![Exile III In-Game Exploration](screenshots/gameplay.png) | ![Exile III Dialogue](screenshots/dialogue.png) |
+
+---
+
 ## Features & Modern Enhancements
 
 * **Non-Blocking Digital Sound Effects**: Custom `libexile3audio.so` interceptor shim intercepts legacy `/dev/dsp` and OSS audio calls, playing sound effects asynchronously via PulseAudio / PipeWire so the game engine no longer stutters or freezes during combat and spellcasting.
@@ -11,6 +19,11 @@ A modernized, high-performance port wrapper and Docker container for Spiderweb S
   - Subpixel-accurate bytecode hinting and anti-aliasing.
   - RAM glyph caching and direct client-side XImage block blitting (< 1 millisecond full-screen text draw latency, eliminating legacy 500ms line-by-line scanning).
   - Proportional character metrics calibrated to match classic 1990s MS Sans Serif proportions without dialogue clipping.
+
+  | Legacy / Clipped Proportions | Calibrated Anti-Aliased Proportions |
+  | :---: | :---: |
+  | ![Before](screenshots/font_before.png) | ![After](screenshots/dialogue.png) |
+
 * **Razor-Sharp Modern Scaling**: Integrated [Gamescope](https://github.com/ValveSoftware/gamescope) support for integer pixel-art scaling (1280x960, 1920x1440) and AMD FidelityFX Super Resolution (FSR).
 * **Self-Contained Docker Container**: Run instantly on any modern 64-bit Linux distribution with a single `docker run` command—zero 32-bit multiarch or legacy library dependencies required on the host system.
 
